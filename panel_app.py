@@ -348,7 +348,7 @@ if not st.session_state.logged_in:
                                 db.set_automation_running(user_id, True)
 
                     st.success(f"✅ Welcome back, {username}!")
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("❌ Invalid username or password!")
             else:
