@@ -3,7 +3,7 @@
 Automation controller for Facebook Messenger message sending.
 ✅ Works on Streamlit Cloud (headless Chromium)
 ✅ Works locally with visible Chrome
-✅ Compatible with Python 3.13 (distutils fix)
+✅ Compatible with Python 3.13+ (distutils fix)
 ✅ Thread-safe logging, no notifications
 """
 
@@ -57,8 +57,11 @@ class AutomationController:
                 options.add_argument("--disable-gpu")
                 options.add_argument("--window-size=1920,1080")
                 options.add_argument("--disable-extensions")
-                driver = uc.Chrome(options=options)
-                self.log("✅ Headless Chromium launched (Streamlit Cloud).")
+                options.add_argument("--disable-infobars")
+                # prevent invalid path error
+                options.binary_location = None
+                driver = uc.Chrome(use_subprocess=True, options=options)
+                self.log("✅ Headless Chromium launched successfully (Streamlit Cloud).")
             else:
                 from selenium import webdriver
                 from selenium.webdriver.chrome.service import Service
@@ -91,9 +94,7 @@ class AutomationController:
 
     # ---------------------- MESSAGE SENDING ----------------------
     def _send_messages(self, config):
-        """
-        Worker thread that sends messages one-by-one.
-        """
+        """Worker thread that sends messages one-by-one."""
         self.running = True
         self.messages_sent = 0
         self.log("Automation thread started.")
