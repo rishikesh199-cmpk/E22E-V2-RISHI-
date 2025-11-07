@@ -1,22 +1,17 @@
 # automation.py
 """
 Automation controller for Facebook Messenger message sending.
-✅ Works both locally (visible browser) and on Streamlit Cloud (headless Chrome)
-✅ No Telegram/Admin notifications
-✅ Thread-safe logging
+✅ Works on Streamlit Cloud (headless Chromium)
+✅ Works locally with visible Chrome
+✅ Thread-safe logging, no notifications
 """
 
 import threading
 import time
 import os
 from queue import Queue
-
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-import chromedriver_autoinstaller
 
 
 class AutomationController:
@@ -38,35 +33,34 @@ class AutomationController:
     # ---------------------- BROWSER SETUP ----------------------
     def _setup_browser(self, headless: bool = True):
         """
-        Launch Chrome in headless mode (for Streamlit Cloud)
-        or visible mode (for local runs).
+        Launch browser in headless mode (for Streamlit Cloud)
+        or visible Chrome (for local use).
         """
-        self.log("Setting up Chrome browser...")
-        chromedriver_autoinstaller.install()  # auto-install correct driver version
-
-        chrome_options = Options()
-        if headless:
-            chrome_options.add_argument("--headless=new")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--disable-infobars")
-
-        # Try to locate chromium binary (for Streamlit Cloud)
-        for path in ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"]:
-            if os.path.exists(path):
-                chrome_options.binary_location = path
-                break
+        self.log("Setting up Chrome/Chromium browser...")
 
         try:
-            service = Service()
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-            self.log("✅ Chrome launched successfully.")
+            if headless:
+                import undetected_chromedriver as uc
+                options = uc.ChromeOptions()
+                options.headless = True
+                options.add_argument("--no-sandbox")
+                options.add_argument("--disable-dev-shm-usage")
+                options.add_argument("--disable-gpu")
+                options.add_argument("--window-size=1920,1080")
+                options.add_argument("--disable-extensions")
+                driver = uc.Chrome(options=options)
+                self.log("✅ Headless Chromium launched (Streamlit Cloud).")
+            else:
+                from selenium import webdriver
+                from selenium.webdriver.chrome.service import Service
+                from selenium.webdriver.chrome.options import Options
+                options = Options()
+                options.add_argument("--window-size=1280,800")
+                driver = webdriver.Chrome(service=Service(), options=options)
+                self.log("✅ Visible Chrome launched (Local PC).")
             return driver
         except Exception as e:
-            self.log(f"❌ Could not start Chrome: {e}")
+            self.log(f"❌ Could not start browser: {e}")
             return None
 
     # ---------------------- COOKIE LOADING ----------------------
@@ -97,7 +91,7 @@ class AutomationController:
 
         self.driver = self._setup_browser(config.get("headless", True))
         if not self.driver:
-            self.log("❌ Fatal automation error: Could not start Chrome: ensure chromium + chromedriver are installed.")
+            self.log("❌ Fatal automation error: Could not start browser.")
             self.running = False
             return
 
@@ -109,7 +103,6 @@ class AutomationController:
             return
 
         if not self._load_cookies(self.driver, cookies):
-            self.log("⚠️ Failed to load cookies.")
             self.driver.quit()
             self.running = False
             return
@@ -163,9 +156,9 @@ class AutomationController:
     def _find_message_input(self, driver):
         """Locate the Messenger input box."""
         selectors = [
-            "div[aria-label='Message']",           # normal desktop
-            "div[contenteditable='true']",          # fallback
-            "textarea",                             # mobile/fallback
+            "div[aria-label='Message']",
+            "div[contenteditable='true']",
+            "textarea",
         ]
         for sel in selectors:
             try:
