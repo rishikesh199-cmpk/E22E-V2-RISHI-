@@ -3,15 +3,24 @@
 Automation controller for Facebook Messenger message sending.
 ✅ Works on Streamlit Cloud (headless Chromium)
 ✅ Works locally with visible Chrome
+✅ Compatible with Python 3.13 (distutils fix)
 ✅ Thread-safe logging, no notifications
 """
 
 import threading
 import time
 import os
+import sys
 from queue import Queue
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+
+# ---- Fix for Python 3.12+ (distutils removed) ----
+try:
+    import distutils  # noqa
+except ModuleNotFoundError:
+    import setuptools
+    sys.modules["distutils"] = setuptools
 
 
 class AutomationController:
