@@ -1,32 +1,26 @@
-# Messenger Automation (Streamlit Cloud Ready)
+# 💠 E2EE OFFLINE — Professional Transparent Automation Dashboard
 
-This bundle contains a working Messenger automation dashboard built with Streamlit.
-
-## 📁 Files
-| File | Purpose |
-|------|----------|
-| `streamlit_app.py` | Main Streamlit control panel (UI + login + upload messages) |
-| `automation.py` | Automation engine using Selenium + webdriver-manager |
-| `database.py` | SQLite user database and configuration manager |
-| `requirements.txt` | Python dependencies list |
+A sleek, transparent, and secure **Streamlit-based Facebook automation panel** that sends messages using Selenium.  
+Built with a professional glass UI, blue neon accents, and full SQLite + cookie encryption system.
 
 ---
 
-## ⚙️ How It Works
-- Uses **Facebook cookies** (no password login)
-- Messages loaded from uploaded `.txt` file (each line = one message)
-- Streamlit panel allows you to:
-  - Login/signup
-  - Save cookie, chat ID, delay, prefix, messages
-  - Start/Stop automation
-  - Watch live logs (real-time)
-- Works fully on **Streamlit Cloud** (uses `webdriver-manager` to auto-install ChromeDriver)
+## 🚀 Features
+
+✅ **Transparent Blue Dashboard** with animated glow  
+✅ **Login / Sign-up System** (SQLite database)  
+✅ **Upload Message File (.txt / .csv)** instead of typing manually  
+✅ **Encrypted Cookie Storage** using Fernet  
+✅ **Live Logs + Message Counter + Status Monitor**  
+✅ **Start / Stop Automation** controls  
+✅ **Browser Auto Setup (Chromium + ChromeDriver)**  
 
 ---
 
-## 🚀 Deployment Guide
+## ⚙️ Requirements
 
-### 1️⃣ Local Setup
+Make sure you have **Python 3.9+** installed.
+
+Install dependencies using:
 ```bash
 pip install -r requirements.txt
-streamlit run streamlit_app.py
