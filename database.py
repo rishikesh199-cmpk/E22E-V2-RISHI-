@@ -1,135 +1,140 @@
+# database.py
 import sqlite3
+from pathlib import Path
 from cryptography.fernet import Fernet
-import os
 
-# Generate encryption key once and save (for cookie protection)
-KEY_FILE = "secret.key"
+BASE = Path(__file__).parent
+DB = BASE / "users.db"
+KEYFILE = BASE / "secret.key"
 
-if not os.path.exists(KEY_FILE):
-    with open(KEY_FILE, "wb") as f:
-        f.write(Fernet.generate_key())
+# ensure key
+if not KEYFILE.exists():
+    KEYFILE.write_bytes(Fernet.generate_key())
+_KEY = KEYFILE.read_bytes()
+_cipher = Fernet(_KEY)
 
-with open(KEY_FILE, "rb") as f:
-    SECRET_KEY = f.read()
-
-fernet = Fernet(SECRET_KEY)
-
-# Initialize DB
 def init_db():
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
-
-    # Users table
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-    )
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     """)
-
-    # Configuration table
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS configs (
-        user_id INTEGER PRIMARY KEY,
-        chat_id TEXT,
-        name_prefix TEXT,
-        delay INTEGER DEFAULT 10,
-        cookies TEXT,
-        messages TEXT,
-        is_running INTEGER DEFAULT 0,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-    )
+        CREATE TABLE IF NOT EXISTS user_configs (
+            user_id INTEGER PRIMARY KEY,
+            chat_id TEXT,
+            name_prefix TEXT,
+            delay INTEGER DEFAULT 5,
+            cookies TEXT,
+            messages TEXT,
+            is_running INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
     """)
     conn.commit()
     conn.close()
 
 init_db()
 
-# ---------- USER MANAGEMENT ----------
-
+# ---------- user management ----------
 def create_user(username, password):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
     try:
         cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+        uid = cur.lastrowid
+        cur.execute("INSERT OR IGNORE INTO user_configs (user_id) VALUES (?)", (uid,))
         conn.commit()
-        user_id = cur.lastrowid
-        cur.execute("INSERT INTO configs (user_id) VALUES (?)", (user_id,))
-        conn.commit()
-        return True, "User created successfully!"
+        return True, "Account created."
     except sqlite3.IntegrityError:
-        return False, "Username already exists!"
+        return False, "Username already exists."
+    except Exception as e:
+        return False, f"Error: {e}"
     finally:
         conn.close()
 
 def verify_user(username, password):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("SELECT id FROM users WHERE username = ? AND password = ?", (username, password))
-    result = cur.fetchone()
+    cur.execute("SELECT id FROM users WHERE username=? AND password=?", (username, password))
+    r = cur.fetchone()
     conn.close()
-    return result[0] if result else None
+    return r[0] if r else None
 
-# ---------- CONFIG MANAGEMENT ----------
+def get_username(user_id):
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+    cur.execute("SELECT username FROM users WHERE id=?", (user_id,))
+    r = cur.fetchone()
+    conn.close()
+    return r[0] if r else str(user_id)
+
+# ---------- config management ----------
+def encrypt_text(plain: str):
+    if not plain:
+        return ""
+    return _cipher.encrypt(plain.encode()).decode()
+
+def decrypt_text(enc: str):
+    if not enc:
+        return ""
+    try:
+        return _cipher.decrypt(enc.encode()).decode()
+    except:
+        return enc
 
 def get_user_config(user_id):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("SELECT chat_id, name_prefix, delay, cookies, messages FROM configs WHERE user_id = ?", (user_id,))
-    row = cur.fetchone()
+    cur.execute("SELECT chat_id, name_prefix, delay, cookies, messages FROM user_configs WHERE user_id=?", (user_id,))
+    r = cur.fetchone()
     conn.close()
-    if row:
-        chat_id, name_prefix, delay, cookies_enc, messages = row
-        cookies = ""
-        try:
-            if cookies_enc:
-                cookies = fernet.decrypt(cookies_enc.encode()).decode()
-        except:
-            cookies = cookies_enc or ""
+    if r:
         return {
-            "chat_id": chat_id or "",
-            "name_prefix": name_prefix or "",
-            "delay": delay or 10,
-            "cookies": cookies,
-            "messages": messages or ""
+            "chat_id": r[0] or "",
+            "name_prefix": r[1] or "",
+            "delay": int(r[2] or 5),
+            "cookies": decrypt_text(r[3] or ""),
+            "messages": r[4] or ""
         }
     else:
-        return {
-            "chat_id": "",
-            "name_prefix": "",
-            "delay": 10,
-            "cookies": "",
-            "messages": ""
-        }
+        return {"chat_id": "", "name_prefix": "", "delay": 5, "cookies": "", "messages": ""}
 
 def update_user_config(user_id, chat_id, name_prefix, delay, cookies, messages):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    try:
-        encrypted_cookies = fernet.encrypt(cookies.encode()).decode() if cookies else ""
-        cur.execute("""
-            UPDATE configs
-            SET chat_id = ?, name_prefix = ?, delay = ?, cookies = ?, messages = ?
-            WHERE user_id = ?
-        """, (chat_id, name_prefix, delay, encrypted_cookies, messages, user_id))
-        conn.commit()
-    finally:
-        conn.close()
-
-# ---------- AUTOMATION STATUS ----------
+    enc = encrypt_text(cookies) if cookies else ""
+    cur.execute("""
+        INSERT INTO user_configs (user_id, chat_id, name_prefix, delay, cookies, messages)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+          chat_id=excluded.chat_id,
+          name_prefix=excluded.name_prefix,
+          delay=excluded.delay,
+          cookies=excluded.cookies,
+          messages=excluded.messages,
+          updated_at=CURRENT_TIMESTAMP
+    """, (user_id, chat_id, name_prefix, delay, enc, messages))
+    conn.commit()
+    conn.close()
 
 def set_automation_running(user_id, running: bool):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("UPDATE configs SET is_running = ? WHERE user_id = ?", (1 if running else 0, user_id))
+    cur.execute("UPDATE user_configs SET is_running=? WHERE user_id=?", (1 if running else 0, user_id))
     conn.commit()
     conn.close()
 
 def get_automation_running(user_id):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("SELECT is_running FROM configs WHERE user_id = ?", (user_id,))
-    row = cur.fetchone()
+    cur.execute("SELECT is_running FROM user_configs WHERE user_id=?", (user_id,))
+    r = cur.fetchone()
     conn.close()
-    return bool(row[0]) if row else False
+    return bool(r[0]) if r else False
