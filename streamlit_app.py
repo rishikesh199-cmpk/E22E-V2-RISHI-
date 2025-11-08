@@ -217,7 +217,7 @@ else:
         if st.session_state.automation.running:
             stop_automation(st.session_state.user_id)
         st.session_state.logged_in = False
-        st.experimental_rerun()
+        st.rerun()
 
     # Load user's saved config
     cfg = db.get_user_config(st.session_state.user_id)
@@ -255,7 +255,7 @@ else:
             db.update_user_config(st.session_state.user_id, chat_id.strip(), name_prefix.strip(), int(delay), final_cookies, final_messages)
             st.success("Configuration saved.")
             add_log("Configuration saved by user.")
-            st.experimental_rerun()
+            st.rerun()
 
     with tab2:
         st.subheader("Automation Control")
@@ -274,7 +274,7 @@ else:
                 cfg_saved = db.get_user_config(st.session_state.user_id)
                 start_automation(cfg_saved, st.session_state.user_id)
                 st.success("Started (simulation).")
-                st.experimental_rerun()
+                st.rerun()
         with stop_col:
             if st.button("⏹ Stop", disabled=not st.session_state.automation.running, use_container_width=True):
                 stop_automation(st.session_state.user_id)
@@ -289,6 +289,6 @@ else:
 
         if st.session_state.automation.running:
             time.sleep(1)
-            st.experimental_rerun()
+            st.rerun()
 
 st.markdown('<div class="footer">Professional Transparent Dashboard • Safe Template</div>', unsafe_allow_html=True)
