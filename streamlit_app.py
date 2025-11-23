@@ -13,7 +13,7 @@ st.markdown(f"""
 <style>
 /* Full HD background image covering entire screen */
 .stApp {{
-    background: url('https://postimg.cc/QVqzFmtS') no-repeat center center fixed;
+    background: url('https://i.ibb.co/m5G9GdXx/bg.png') no-repeat center center fixed;
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
@@ -94,7 +94,7 @@ st.markdown(f"""
 </style>
 
 <!-- Logo -->
-<img class="logo" src="https://ibb.co/fYsL0vgm/logo.png" alt="Logo">
+<img class="logo" src="https://i.ibb.co/m5G9GdXx/logo.png" alt="Logo">
 
 <!-- Sparkles container -->
 <div class="sparkle" style="top:5%; left:5%;"></div>
@@ -106,7 +106,7 @@ st.markdown(f"""
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title"></div>', unsafe_allow_html=True)
+st.markdown('<div class="title">⚡ E2EE / Non-E2EE AUTOMATION</div>', unsafe_allow_html=True)
 
 # ---------------- SESSION VARS ----------------
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
