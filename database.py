@@ -38,7 +38,7 @@ def hash_password(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
 
 # ---------------- CREATE USER ----------------
-def create_user(username, password, approved=True):
+def create_user(username, password):
     try:
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
