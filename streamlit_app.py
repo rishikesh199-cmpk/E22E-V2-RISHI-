@@ -13,12 +13,12 @@ st.markdown("""
 /* Full HD background */
 .stApp {
     background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
-    background-size: cover;
+    background-size: fixed;
 }
 .stApp::before {
     content: "";
     position: fixed;
-    top:0; left:0; width:90%; height:100%;
+    top:0; left:0; width:100%; height:100%;
     background: rgba(0,0,0,0.2);  /* overlay for text readability */
     pointer-events:none;
     z-index:0;
