@@ -19,24 +19,12 @@ st.markdown("""
     background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
     background-size: contain;
 }
-.stApp::before {
-    content: "";
-    position: fixed;
-    top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.2);
-    pointer-events:none;
-    z-index:0;
-}
 .stCard {
     background: rgba(255,255,255,0.08) !important;
     border-radius: 20px !important;
     padding: 25px !important;
     border: 2px solid rgba(255,255,255,0.25) !important;
     box-shadow: 0 0 25px rgba(0,255,255,0.4), 0 0 60px rgba(255,0,255,0.3);
-    transition: all 0.3s ease-in-out;
-}
-.stCard:hover {
-    box-shadow: 0 0 35px rgba(0,255,255,0.6), 0 0 70px rgba(255,0,255,0.5);
 }
 input, textarea {
     background: rgba(0,0,0,0.5) !important;
@@ -44,11 +32,6 @@ input, textarea {
     border-radius: 10px !important;
     color: #0ff !important;
     padding: 5px 10px !important;
-}
-input:focus, textarea:focus {
-    outline: none;
-    border: 2px solid #ff00ff !important;
-    box-shadow: 0 0 15px #ff00ff;
 }
 .stButton>button {
     background: linear-gradient(45deg,#00eaff,#ff00d4) !important;
@@ -98,7 +81,6 @@ input:focus, textarea:focus {
     box-shadow: 0 0 20px rgba(0,255,255,0.35);
 }
 </style>
-
 <img class="logo" src="https://i.ibb.co/m5G9GdXx/logo.png" alt="Logo">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
@@ -183,28 +165,15 @@ log_placeholder = st.empty()
 msg_count_placeholder = st.empty()
 
 # ---------------- BROWSER / AUTOMATION FUNCTIONS ----------------
-def get_chrome_path():
-    paths = ["/usr/bin/google-chrome","/usr/bin/google-chrome-stable","/usr/bin/chromium-browser","/usr/bin/chromium"]
-    for p in paths:
-        if shutil.which(p):
-            return p
-    return None
-
 def setup_browser():
-    chrome_path = get_chrome_path()
-    if not chrome_path:
-        raise Exception("Chrome binary not found. Please install Chrome.")
-    
     opt = Options()
-    # opt.add_argument("--headless=new")  # Optional
+    opt.add_argument("--headless=new")  # Headless server mode
     opt.add_argument("--no-sandbox")
     opt.add_argument("--disable-dev-shm-usage")
     opt.add_argument("--disable-gpu")
     opt.add_argument("--disable-software-rasterizer")
     opt.add_argument("--window-size=1920,1080")
     opt.add_argument("--remote-allow-origins=*")
-    opt.binary_location = chrome_path
-    
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=opt)
     return driver
