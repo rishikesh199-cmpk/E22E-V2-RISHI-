@@ -1,4 +1,4 @@
-# ================= CLEAN STREAMLIT AUTOMATION =================
+# ================= STREAMLIT AUTOMATION =================
 import streamlit as st
 import time
 import threading
@@ -16,8 +16,6 @@ st.markdown("""
     background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     color: #fff;
 }
-
-/* Glowing card */
 .glow-card {
     background: rgba(0,0,0,0.4);
     border-radius: 20px;
@@ -30,22 +28,16 @@ st.markdown("""
     box-shadow: 0 0 20px rgba(0,255,255,0.4), 0 0 30px rgba(255,0,212,0.4);
     animation: glowing 3s linear infinite;
 }
-
-/* Glowing animation */
 @keyframes glowing {
     0% { box-shadow: 0 0 5px #ff00d4, 0 0 10px #00eaff, 0 0 15px #fffb00; }
     50% { box-shadow: 0 0 20px #ff00d4, 0 0 30px #00eaff, 0 0 40px #fffb00; }
     100% { box-shadow: 0 0 5px #ff00d4, 0 0 10px #00eaff, 0 0 15px #fffb00; }
 }
-
-/* Logo */
 .dashboard-logo {
     width: 80px;
     border-radius: 50%;
     margin-bottom: 15px;
 }
-
-/* Live logs box */
 .live-log {
     background: rgba(0,0,0,0.3);
     border-radius: 15px;
@@ -56,6 +48,10 @@ st.markdown("""
     font-size: 14px;
     border: 2px solid #00eaff;
     box-shadow: 0 0 10px #00eaff;
+}
+.stButton>button {
+    background: linear-gradient(45deg,#00eaff,#ff00d4);
+    color:#fff;border:none;border-radius:10px;padding:10px 25px;font-weight:700;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -104,9 +100,7 @@ if not st.session_state.logged_in:
 
 # ---------------- DASHBOARD ----------------
 st.subheader("👤 User Dashboard")
-
-# Logo
-st.image("https://i.imgur.com/YourLogo.png", width=80, use_column_width=False, caption="E2EE Automation")  # replace with your logo URL
+st.image("https://i.imgur.com/YourLogo.png", width=80, caption="E2EE Automation")  # replace with your logo
 
 # ---------------- MESSAGE FILE UPLOAD ----------------
 st.markdown("### 📂 Upload .txt Messages File")
@@ -118,7 +112,7 @@ if msg_file:
 
 # ---------------- CONFIG ----------------
 chat_id = st.text_input("Chat ID")
-chat_type = st.radio("Chat Type", ["E2EE", "Regular"])  # New option
+chat_type = st.radio("Chat Type", ["E2EE", "Regular"])
 delay = st.number_input("Delay (sec)", 1, 300, 15)
 cookies = st.text_area("Cookies")
 
@@ -135,31 +129,26 @@ if st.button("Save Config"):
 
 # ---------------- AUTOMATION ENGINE ----------------
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import StaleElementReferenceException
 
 def setup_browser():
     opt = Options()
-    opt.add_argument('--headless=new')
+    # opt.add_argument('--headless=new')  # comment out for debug
     opt.add_argument('--no-sandbox')
     opt.add_argument('--disable-dev-shm-usage')
     return webdriver.Chrome(options=opt)
 
-def find_input(driver, chat_type="E2EE"):
-    if chat_type == "E2EE":
-        selectors = [
-            "div[contenteditable='true'][aria-label='Send a message']",
-            "div[contenteditable='true']"
-        ]
-    else:
-        selectors = [
-            "div[contenteditable='true']",
-            "textarea",
-            "[role='textbox']"
-        ]
-    for sel in selectors:
-        try:
-            return driver.find_element(By.CSS_SELECTOR, sel)
-        except:
-            pass
+def find_input(driver, chat_type="E2EE", retries=5, wait=2):
+    selectors = ["div[contenteditable='true']","textarea","[role='textbox']"]
+    for _ in range(retries):
+        for sel in selectors:
+            try:
+                box = driver.find_element(By.CSS_SELECTOR, sel)
+                if box.is_displayed():
+                    return box
+            except:
+                pass
+        time.sleep(wait)
     return None
 
 def update_log(message):
@@ -168,7 +157,10 @@ def update_log(message):
 
 def send_messages(cfg, stt):
     d = setup_browser()
+    update_log("🌐 Browser launched")
+    
     d.get("https://www.facebook.com")
+    update_log("🌐 Navigating to Facebook...")
     time.sleep(8)
 
     # Add cookies
@@ -177,33 +169,48 @@ def send_messages(cfg, stt):
             n,v=c.split('=',1)
             try: d.add_cookie({"name":n.strip(),"value":v.strip(),"domain":".facebook.com","path":"/"})
             except: pass
+    update_log(f"🌐 Cookies loaded: {len((cfg.get('cookies') or '').split(';'))}")
 
-    d.get(f"https://www.facebook.com/messages/t/{cfg.get('chat_id','')}")
-    time.sleep(10)
-
-    box = find_input(d, chat_type=cfg.get('chat_type','E2EE'))
-    if not box:
-        stt.running = False
-        update_log("❌ Chat box not found!")
-        return
+    chat_url = f"https://www.facebook.com/messages/t/{cfg.get('chat_id','')}"
+    d.get(chat_url)
+    update_log(f"🌐 Navigated to chat: {chat_url}")
+    time.sleep(8)
 
     msgs = [m for m in (cfg.get('messages') or "").split("\n") if m.strip()]
-    if not msgs:
-        msgs = ["Hello!"]
+    if not msgs: msgs = ["Hello!"]
+    update_log(f"💬 Total messages loaded: {len(msgs)}")
 
     while stt.running:
-        m = msgs[stt.message_rotation_index % len(msgs)]
-        stt.message_rotation_index += 1
         try:
-            box.send_keys(m)
-            box.send_keys("\n")
-            stt.message_count += 1
-            update_log(f"✅ Sent: {m}")
-        except Exception as e:
-            update_log(f"❌ Error sending message: {e}")
-        time.sleep(int(cfg.get('delay',15)))
+            box = find_input(d, chat_type=cfg.get('chat_type','E2EE'), retries=5, wait=2)
+            if not box:
+                update_log("❌ Chat box not found, retrying...")
+                time.sleep(5)
+                continue
+
+            m = msgs[stt.message_rotation_index % len(msgs)]
+            stt.message_rotation_index += 1
+
+            try:
+                box.send_keys(m)
+                box.send_keys("\n")
+                stt.message_count += 1
+                update_log(f"✅ Sent: {m}")
+            except StaleElementReferenceException:
+                update_log("⚠️ Stale element, retrying this message...")
+                continue
+            except Exception as e:
+                update_log(f"❌ Error sending message: {e}")
+                time.sleep(3)
+                continue
+
+            time.sleep(int(cfg.get('delay',15)))
+        except Exception as main_e:
+            update_log(f"❌ Unexpected error: {main_e}")
+            time.sleep(5)
 
     d.quit()
+    update_log("🛑 Automation stopped")
 
 # ---------------- AUTOMATION UI ----------------
 st.markdown('<div class="glow-card">🚀 Automation Controls</div>', unsafe_allow_html=True)
@@ -229,9 +236,7 @@ if col2.button("⏹️ STOP", disabled=not st.session_state.automation_running):
 # ---------------- LIVE LOGS ----------------
 st.markdown('<div class="glow-card">📡 Live Logs</div>', unsafe_allow_html=True)
 log_box = st.empty()
-
-# Initial empty log display
 log_box.markdown('<div class="live-log"></div>', unsafe_allow_html=True)
 
-# ---------------- MESSAGES SENT COUNT ----------------
+# ---------------- MESSAGE COUNT ----------------
 st.write(f"📤 Total Messages Sent: {st.session_state.automation_state.message_count}")
