@@ -106,7 +106,7 @@ st.markdown(f"""
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title">⚡ E2EE / Non-E2EE AUTOMATION</div>', unsafe_allow_html=True)
+st.markdown('<div class="title"></div>', unsafe_allow_html=True)
 
 # ---------------- SESSION VARS ----------------
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
