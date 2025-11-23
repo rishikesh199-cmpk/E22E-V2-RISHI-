@@ -94,7 +94,7 @@ st.markdown(f"""
 </style>
 
 <!-- Logo -->
-<img class="logo" src="https://i.ibb.co/m5G9GdXx/logo.png" alt="Logo">
+<img class="logo" src="https://ibb.co/fYsL0vgm/logo.png" alt="Logo">
 
 <!-- Sparkles container -->
 <div class="sparkle" style="top:5%; left:5%;"></div>
