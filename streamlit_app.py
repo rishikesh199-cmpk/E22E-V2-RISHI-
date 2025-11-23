@@ -14,7 +14,7 @@ st.markdown("""
 /* Full HD background */
 .stApp {
     background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
-    background-size: contain;  /* keeps full image visible */
+    background-size: cover;  /* keeps full image visible */
 }
 
 /* Overlay for readability */
@@ -165,7 +165,7 @@ if not st.session_state.logged_in:
                 st.session_state.messages = cfg.get('messages','').split("\n") if cfg.get('messages') else []
                 if cfg.get('running',False):
                     st.session_state.automation_state.running=True
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials")
     with tab2:
@@ -189,7 +189,7 @@ if st.button("Logout"):
     st.session_state.logged_in=False
     st.session_state.user_id=None
     st.session_state.automation_state.running=False
-    st.experimental_rerun()
+    st.rerun()
 
 # ---------------- MESSAGE UPLOAD ----------------
 msg_file = st.file_uploader("Upload .txt Messages File", type=["txt"])
