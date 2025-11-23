@@ -1,4 +1,4 @@
-# ---------------- CLEAN STREAMLIT SCRIPT ----------------
+# ---------------- CLEAN STREAMLIT SCRIPT WITH LIVE LOGS ----------------
 import streamlit as st
 import time
 import threading
@@ -16,6 +16,8 @@ st.markdown("""
 .title{font-size:2.5rem;font-weight:900;text-align:center;background:linear-gradient(90deg,#00eaff,#ff00d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .card{background:rgba(255,255,255,0.06);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);} 
 .stButton>button{background:linear-gradient(45deg,#00eaff,#ff00d4);color:#fff;border:none;border-radius:10px;padding:10px 25px;font-weight:700;}
+.log-entry{font-family:monospace;color:#00ffcc;}
+.log-fail{font-family:monospace;color:#ff4444;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -26,7 +28,12 @@ if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'user_id' not in st.session_state: st.session_state.user_id = None
 if 'automation_running' not in st.session_state: st.session_state.automation_running = False
 if 'automation_state' not in st.session_state:
-    st.session_state.automation_state = type('obj',(object,),{"running":False,"message_count":0,"message_rotation_index":0})()
+    st.session_state.automation_state = type('obj',(object,),{
+        "running":False,
+        "message_count":0,
+        "message_rotation_index":0,
+        "logs":[]
+    })()
 
 # ---------------- LOGIN SYSTEM ----------------
 if not st.session_state.logged_in:
@@ -54,7 +61,7 @@ if not st.session_state.logged_in:
             if np != npc:
                 st.error("Passwords do not match!")
             else:
-                ok, msg = db.create_user(nu, np, approved=True)  # approved by default
+                ok, msg = db.create_user(nu, np, approved=True)
                 if ok: st.success("User Created! You can now login.")
                 else: st.error(msg)
 
@@ -140,7 +147,7 @@ def send_messages(cfg, stt):
 
     box=find_input(d)
     if not box:
-        st.warning("Unable to find message input box.")
+        stt.logs.append({"status":"fail","message":"Input box not found"})
         stt.running=False
         return
 
@@ -155,8 +162,9 @@ def send_messages(cfg, stt):
             box.send_keys(m)
             box.send_keys("\n")
             stt.message_count+=1
-        except Exception:
-            pass
+            stt.logs.append({"status":"success","message":m,"rotation":stt.message_rotation_index})
+        except Exception as e:
+            stt.logs.append({"status":"fail","message":m,"error":str(e)})
         time.sleep(int(cfg.get('delay',15)))
 
     d.quit()
@@ -190,5 +198,14 @@ if col2.button("⏹️ STOP", disabled=not st.session_state.automation_running):
     st.session_state.automation_running = False
     st.rerun()
 
-# ---------------- LIVE STATUS ----------------
+# ---------------- LIVE STATUS & LOGS ----------------
 st.write(f"📡 Messages Sent: {st.session_state.automation_state.message_count}")
+
+log_container = st.container()
+with log_container:
+    st.markdown("### 📜 Live Logs")
+    for log in st.session_state.automation_state.logs[-50:]:  # show last 50 logs
+        if log["status"]=="success":
+            st.markdown(f"<div class='log-entry'>✅ Sent: {log['message']} (Loop {log.get('rotation', '-')})</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='log-fail'>❌ Failed: {log['message']} Error: {log.get('error','')}</div>", unsafe_allow_html=True)
