@@ -5,7 +5,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-import shutil
 import database as db
 from webdriver_manager.chrome import ChromeDriverManager
 
@@ -167,7 +166,7 @@ msg_count_placeholder = st.empty()
 # ---------------- BROWSER / AUTOMATION FUNCTIONS ----------------
 def setup_browser():
     opt = Options()
-    opt.add_argument("--headless=new")  # Headless server mode
+    opt.add_argument("--headless=new")
     opt.add_argument("--no-sandbox")
     opt.add_argument("--disable-dev-shm-usage")
     opt.add_argument("--disable-gpu")
