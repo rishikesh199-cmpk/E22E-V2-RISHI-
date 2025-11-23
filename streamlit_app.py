@@ -129,7 +129,7 @@ input:focus, textarea:focus {
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title">🩵</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">h1<e2ee>h1</div>', unsafe_allow_html=True)
 
 # ---------------- SESSION STATE ----------------
 if 'logged_in' not in st.session_state: st.session_state.logged_in=False
