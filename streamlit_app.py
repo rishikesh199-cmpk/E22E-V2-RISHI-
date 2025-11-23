@@ -3,21 +3,22 @@ import threading
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+import shutil
 import database as db
+from webdriver_manager.chrome import ChromeDriverManager
 
+# ---------------- Page Config ----------------
 st.set_page_config(page_title="Automation Dashboard", page_icon="🔥", layout="wide")
 
-# ---------------- CSS / STYLING ----------------
+# ---------------- CSS / Styling ----------------
 st.markdown("""
 <style>
-/* Full HD background */
 .stApp {
     background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
-    background-size: cover;  /* keeps full image visible */
+    background-size: contain;
 }
-
-/* Overlay for readability */
 .stApp::before {
     content: "";
     position: fixed;
@@ -26,8 +27,6 @@ st.markdown("""
     pointer-events:none;
     z-index:0;
 }
-
-/* Cards */
 .stCard {
     background: rgba(255,255,255,0.08) !important;
     border-radius: 20px !important;
@@ -39,8 +38,6 @@ st.markdown("""
 .stCard:hover {
     box-shadow: 0 0 35px rgba(0,255,255,0.6), 0 0 70px rgba(255,0,255,0.5);
 }
-
-/* Inputs glowing */
 input, textarea {
     background: rgba(0,0,0,0.5) !important;
     border: 2px solid #0ff !important;
@@ -53,8 +50,6 @@ input:focus, textarea:focus {
     border: 2px solid #ff00ff !important;
     box-shadow: 0 0 15px #ff00ff;
 }
-
-/* Buttons glowing */
 .stButton>button {
     background: linear-gradient(45deg,#00eaff,#ff00d4) !important;
     color:#fff !important;
@@ -63,8 +58,6 @@ input:focus, textarea:focus {
     padding:10px 25px !important;
     font-weight:700 !important;
 }
-
-/* Logo */
 .logo {
     width: 120px;
     height: 120px;
@@ -78,8 +71,6 @@ input:focus, textarea:focus {
     50% { transform: scale(1.12); box-shadow: 0 0 40px rgba(0,255,255,0.8); }
     100% { transform: scale(1); box-shadow: 0 0 15px rgba(0,255,255,0.6); }
 }
-
-/* Title: watercolor text */
 .title {
     font-family: 'Orbitron', sans-serif;
     font-size: 3.2rem;
@@ -97,8 +88,6 @@ input:focus, textarea:focus {
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
-
-/* Live logs */
 .logbox {
     background: rgba(0,0,0,0.55);
     color: #0ff;
@@ -108,33 +97,15 @@ input:focus, textarea:focus {
     border-radius: 20px;
     box-shadow: 0 0 20px rgba(0,255,255,0.35);
 }
-
-/* Sparkles */
-@keyframes sparkle {
-    0% { transform: translate(0,0) rotate(0deg); opacity:1; }
-    100% { transform: translate(100px,-100px) rotate(360deg); opacity:0; }
-}
-.sparkle {
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    background: linear-gradient(45deg, #0ff, #f0f, #ff0);
-    border-radius: 50%;
-    animation: sparkle 2s linear infinite;
-}
 </style>
 
 <img class="logo" src="https://i.ibb.co/m5G9GdXx/logo.png" alt="Logo">
-<div class="sparkle" style="top:5%; left:5%;"></div>
-<div class="sparkle" style="top:10%; right:10%;"></div>
-<div class="sparkle" style="bottom:10%; left:15%;"></div>
-<div class="sparkle" style="bottom:5%; right:5%;"></div>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="title">⚡ E2EE / Non-E2EE AUTOMATION DASHBOARD</div>', unsafe_allow_html=True)
 
-# ---------------- SESSION STATE ----------------
+# ---------------- Session State ----------------
 if 'logged_in' not in st.session_state: st.session_state.logged_in=False
 if 'user_id' not in st.session_state: st.session_state.user_id=None
 if 'automation_state' not in st.session_state:
@@ -144,7 +115,7 @@ if 'automation_state' not in st.session_state:
         "message_rotation_index": 0,
         "logs": []
     })()
-if 'messages' not in st.session_state: st.session_state.messages = []
+if 'messages' not in st.session_state: st.session_state.messages=[]
 
 # ---------------- LOGIN / CREATE ----------------
 if not st.session_state.logged_in:
@@ -165,7 +136,7 @@ if not st.session_state.logged_in:
                 st.session_state.messages = cfg.get('messages','').split("\n") if cfg.get('messages') else []
                 if cfg.get('running',False):
                     st.session_state.automation_state.running=True
-                st.rerun()
+                st.stop()
             else:
                 st.error("Invalid credentials")
     with tab2:
@@ -189,7 +160,7 @@ if st.button("Logout"):
     st.session_state.logged_in=False
     st.session_state.user_id=None
     st.session_state.automation_state.running=False
-    st.rerun()
+    st.stop()
 
 # ---------------- MESSAGE UPLOAD ----------------
 msg_file = st.file_uploader("Upload .txt Messages File", type=["txt"])
@@ -211,14 +182,32 @@ if st.button("Save Config"):
 log_placeholder = st.empty()
 msg_count_placeholder = st.empty()
 
-# ---------------- AUTOMATION FUNCTIONS ----------------
+# ---------------- BROWSER / AUTOMATION FUNCTIONS ----------------
+def get_chrome_path():
+    paths = ["/usr/bin/google-chrome","/usr/bin/google-chrome-stable","/usr/bin/chromium-browser","/usr/bin/chromium"]
+    for p in paths:
+        if shutil.which(p):
+            return p
+    return None
+
 def setup_browser():
+    chrome_path = get_chrome_path()
+    if not chrome_path:
+        raise Exception("Chrome binary not found. Please install Chrome.")
+    
     opt = Options()
-    # Remove headless if messages blocked
-    # opt.add_argument('--headless=new')
-    opt.add_argument('--no-sandbox')
-    opt.add_argument('--disable-dev-shm-usage')
-    return webdriver.Chrome(options=opt)
+    # opt.add_argument("--headless=new")  # Optional
+    opt.add_argument("--no-sandbox")
+    opt.add_argument("--disable-dev-shm-usage")
+    opt.add_argument("--disable-gpu")
+    opt.add_argument("--disable-software-rasterizer")
+    opt.add_argument("--window-size=1920,1080")
+    opt.add_argument("--remote-allow-origins=*")
+    opt.binary_location = chrome_path
+    
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=opt)
+    return driver
 
 def find_input(driver, chat_type):
     if chat_type=="E2EE":
@@ -239,8 +228,10 @@ def send_messages(cfg, stt):
         for c in (cfg.get('cookies') or "").split(";"):
             if "=" in c:
                 n,v = c.split("=",1)
-                try: driver.add_cookie({"name":n.strip(),"value":v.strip(),"domain":".facebook.com","path":"/"})
-                except: stt.logs.append(f"❌ Cookie failed: {c}")
+                try:
+                    driver.add_cookie({"name":n.strip(),"value":v.strip(),"domain":".facebook.com","path":"/"})
+                except Exception as e:
+                    stt.logs.append(f"❌ Cookie failed: {c} | {e}")
         driver.get(f"https://www.facebook.com/messages/t/{cfg.get('chat_id','')}")
         time.sleep(10)
         stt.logs.append(f"Opened chat: {cfg.get('chat_id','')}")
@@ -260,12 +251,12 @@ def send_messages(cfg, stt):
                 stt.message_count +=1
                 stt.logs.append(f"✅ Sent: {m}")
             except Exception as e:
-                stt.logs.append(f"❌ Error: {e}")
+                stt.logs.append(f"❌ Send error: {e}")
             time.sleep(int(cfg.get('delay',15)))
         driver.quit()
         stt.logs.append("⏹️ Automation stopped")
     except Exception as e:
-        stt.logs.append(f"❌ Browser error: {e}")
+        stt.logs.append(f"❌ Browser startup error: {e}")
         stt.running=False
 
 # ---------------- AUTOMATION CONTROLS ----------------
