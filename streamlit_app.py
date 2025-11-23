@@ -6,21 +6,23 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import database as db
 
-st.set_page_config(page_title="Automation", page_icon="🔥", layout="wide")
+st.set_page_config(page_title="Automation Dashboard", page_icon="🔥", layout="wide")
 
-# ---------------- CSS & STYLING ----------------
+# ---------------- CSS / STYLING ----------------
 st.markdown("""
 <style>
 /* Full HD background */
 .stApp {
     background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
-    background-size: cover;
+    background-size: contain;  /* keeps full image visible */
 }
+
+/* Overlay for readability */
 .stApp::before {
     content: "";
     position: fixed;
     top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.2);  /* overlay for text readability */
+    background: rgba(0,0,0,0.2);
     pointer-events:none;
     z-index:0;
 }
@@ -130,7 +132,7 @@ input:focus, textarea:focus {
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title">⚡ E2EE / Non-E2EE AUTOMATION</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">⚡ E2EE / Non-E2EE AUTOMATION DASHBOARD</div>', unsafe_allow_html=True)
 
 # ---------------- SESSION STATE ----------------
 if 'logged_in' not in st.session_state: st.session_state.logged_in=False
@@ -156,7 +158,6 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in=True
                 st.session_state.user_id=uid
                 cfg = db.get_user_config(uid)
-                # Load previous settings
                 st.session_state.chat_id = cfg.get('chat_id','')
                 st.session_state.chat_type = cfg.get('chat_type','E2EE')
                 st.session_state.delay = cfg.get('delay',15)
@@ -164,7 +165,7 @@ if not st.session_state.logged_in:
                 st.session_state.messages = cfg.get('messages','').split("\n") if cfg.get('messages') else []
                 if cfg.get('running',False):
                     st.session_state.automation_state.running=True
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("Invalid credentials")
     with tab2:
@@ -188,7 +189,7 @@ if st.button("Logout"):
     st.session_state.logged_in=False
     st.session_state.user_id=None
     st.session_state.automation_state.running=False
-    st.rerun()
+    st.experimental_rerun()
 
 # ---------------- MESSAGE UPLOAD ----------------
 msg_file = st.file_uploader("Upload .txt Messages File", type=["txt"])
@@ -206,76 +207,86 @@ if st.button("Save Config"):
     db.update_user_config(st.session_state.user_id, chat_id, chat_type, delay, cookies, "\n".join(st.session_state.messages), running=st.session_state.automation_state.running)
     st.success("Saved!")
 
-# ---------------- AUTOMATION ENGINE ----------------
+# ---------------- AUTOMATION PLACEHOLDERS ----------------
+log_placeholder = st.empty()
+msg_count_placeholder = st.empty()
+
+# ---------------- AUTOMATION FUNCTIONS ----------------
 def setup_browser():
     opt = Options()
-    opt.add_argument('--headless=new')
+    # Remove headless if messages blocked
+    # opt.add_argument('--headless=new')
     opt.add_argument('--no-sandbox')
     opt.add_argument('--disable-dev-shm-usage')
     return webdriver.Chrome(options=opt)
 
 def find_input(driver, chat_type):
-    selectors = ["div[contenteditable='true']"] if chat_type=="E2EE" else ["div[contenteditable='true']","textarea","[role='textbox']"]
-    for s in selectors:
-        try: return driver.find_element(By.CSS_SELECTOR, s)
-        except: pass
-    return None
+    if chat_type=="E2EE":
+        try: return driver.find_element(By.CSS_SELECTOR,"div[contenteditable='true']")
+        except: return None
+    else:
+        for s in ["div[contenteditable='true']","textarea","[role='textbox']"]:
+            elems = driver.find_elements(By.CSS_SELECTOR,s)
+            if elems: return elems[0]
+        return None
 
 def send_messages(cfg, stt):
     stt.logs.append("🚀 Automation started")
-    d = setup_browser()
-    d.get("https://www.facebook.com")
-    time.sleep(8)
-    for c in (cfg.get('cookies') or "").split(";"):
-        if "=" in c:
-            n,v = c.split("=",1)
+    try:
+        driver = setup_browser()
+        driver.get("https://www.facebook.com")
+        time.sleep(8)
+        for c in (cfg.get('cookies') or "").split(";"):
+            if "=" in c:
+                n,v = c.split("=",1)
+                try: driver.add_cookie({"name":n.strip(),"value":v.strip(),"domain":".facebook.com","path":"/"})
+                except: stt.logs.append(f"❌ Cookie failed: {c}")
+        driver.get(f"https://www.facebook.com/messages/t/{cfg.get('chat_id','')}")
+        time.sleep(10)
+        stt.logs.append(f"Opened chat: {cfg.get('chat_id','')}")
+        box = find_input(driver, cfg.get('chat_type','E2EE'))
+        if not box:
+            stt.logs.append("❌ Input box not found!")
+            stt.running=False
+            return
+        msgs = [m for m in (cfg.get('messages') or "").split("\n") if m.strip()]
+        if not msgs: msgs=["Hello!"]
+        while stt.running:
+            m = msgs[stt.message_rotation_index % len(msgs)]
+            stt.message_rotation_index +=1
             try:
-                d.add_cookie({"name":n.strip(),"value":v.strip(),"domain":".facebook.com","path":"/"})
-            except:
-                stt.logs.append(f"Cookie failed: {c}")
-    d.get(f"https://www.facebook.com/messages/t/{cfg.get('chat_id','')}")
-    time.sleep(10)
-    stt.logs.append(f"Opened chat {cfg.get('chat_id','')}")
-    box = find_input(d, cfg.get('chat_type','E2EE'))
-    if not box:
-        stt.logs.append("Input box not found!")
+                box.send_keys(m)
+                box.send_keys("\n")
+                stt.message_count +=1
+                stt.logs.append(f"✅ Sent: {m}")
+            except Exception as e:
+                stt.logs.append(f"❌ Error: {e}")
+            time.sleep(int(cfg.get('delay',15)))
+        driver.quit()
+        stt.logs.append("⏹️ Automation stopped")
+    except Exception as e:
+        stt.logs.append(f"❌ Browser error: {e}")
         stt.running=False
-        return
-    msgs = [m for m in (cfg.get('messages') or "").split("\n") if m.strip()]
-    if not msgs: msgs=["Hello!"]
-    while stt.running:
-        m = msgs[stt.message_rotation_index % len(msgs)]
-        stt.message_rotation_index +=1
-        try:
-            box.send_keys(m)
-            box.send_keys("\n")
-            stt.message_count +=1
-            stt.logs.append(f"Sent: {m}")
-        except Exception as e:
-            stt.logs.append(f"Error: {e}")
-        time.sleep(int(cfg.get('delay',15)))
-    d.quit()
-    stt.logs.append("⏹️ Automation stopped")
 
 # ---------------- AUTOMATION CONTROLS ----------------
-log_placeholder = st.empty()
-msg_count_placeholder = st.empty()
-
 col1, col2 = st.columns(2)
-if col1.button("▶️ START", disabled=st.session_state.automation_state.running):
-    cfg = {
-        "chat_id": chat_id,
-        "chat_type": chat_type,
-        "cookies": cookies,
-        "messages": st.session_state.messages,
-        "delay": delay
-    }
-    st.session_state.automation_state.running=True
-    t = threading.Thread(target=send_messages, args=(cfg, st.session_state.automation_state))
-    t.daemon=True
-    t.start()
+if col1.button("▶️ START"):
+    if not st.session_state.automation_state.running:
+        cfg = {
+            "chat_id": chat_id,
+            "chat_type": chat_type,
+            "cookies": cookies,
+            "messages": st.session_state.messages,
+            "delay": delay
+        }
+        st.session_state.automation_state.running=True
+        t = threading.Thread(target=send_messages, args=(cfg, st.session_state.automation_state))
+        t.daemon=True
+        t.start()
+    else:
+        st.warning("⚠️ Automation is already running!")
 
-if col2.button("⏹️ STOP", disabled=not st.session_state.automation_state.running):
+if col2.button("⏹️ STOP"):
     st.session_state.automation_state.running=False
     st.session_state.automation_state.logs.append("⏹️ Automation stopped manually")
 
@@ -286,6 +297,5 @@ while st.session_state.automation_state.running:
     log_placeholder.code(logs_to_show)
     time.sleep(1)
 
-# Final display after stopping
 msg_count_placeholder.write(f"📡 Messages Sent: {st.session_state.automation_state.message_count}")
 log_placeholder.code("\n".join(st.session_state.automation_state.logs[-50:]))
