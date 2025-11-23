@@ -13,7 +13,7 @@ st.markdown(f"""
 <style>
 /* Full HD background image covering entire screen */
 .stApp {{
-    background: url('https://ibb.co/fYsL0vgm') no-repeat center center fixed;
+    background: url('https://ibb.co/5xK1hP4r') no-repeat center center fixed;
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
