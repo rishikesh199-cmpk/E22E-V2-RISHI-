@@ -9,6 +9,15 @@ import database as db  # your database module
 
 st.set_page_config(page_title="E2EE Automation", page_icon="🔥", layout="wide")
 
+# ---------------- SESSION VARS ----------------
+if 'logged_in' not in st.session_state: st.session_state.logged_in = False
+if 'user_id' not in st.session_state: st.session_state.user_id = None
+if 'automation_running' not in st.session_state: st.session_state.automation_running = False
+if 'automation_state' not in st.session_state:
+    st.session_state.automation_state = type('obj',(object,),{"running":False,"message_count":0,"message_rotation_index":0})()
+# Important: initialize logs before threads start
+if 'logs' not in st.session_state: st.session_state.logs = []
+
 # ---------------- CSS ----------------
 st.markdown("""
 <style>
@@ -57,14 +66,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="glow-card"><h2 style="text-align:center;">⚡ E2EE AUTOMATION</h2></div>', unsafe_allow_html=True)
-
-# ---------------- SESSION VARS ----------------
-if 'logged_in' not in st.session_state: st.session_state.logged_in = False
-if 'user_id' not in st.session_state: st.session_state.user_id = None
-if 'automation_running' not in st.session_state: st.session_state.automation_running = False
-if 'automation_state' not in st.session_state:
-    st.session_state.automation_state = type('obj',(object,),{"running":False,"message_count":0,"message_rotation_index":0})()
-if 'logs' not in st.session_state: st.session_state.logs = []
 
 # ---------------- LOGIN & CREATE USER ----------------
 if not st.session_state.logged_in:
@@ -151,11 +152,11 @@ def find_input(driver, chat_type="E2EE", retries=5, wait=2):
         time.sleep(wait)
     return None
 
-def update_log(message):
-    st.session_state.logs.append(message)
-    log_box.markdown('<div class="live-log">' + "<br>".join(st.session_state.logs[-50:]) + '</div>', unsafe_allow_html=True)
+def send_messages(cfg, stt, logs_ref):
+    def update_log(message):
+        logs_ref.append(message)
+        log_box.markdown('<div class="live-log">' + "<br>".join(logs_ref[-50:]) + '</div>', unsafe_allow_html=True)
 
-def send_messages(cfg, stt):
     d = setup_browser()
     update_log("🌐 Browser launched")
     
@@ -223,7 +224,7 @@ if col1.button("▶️ START", disabled=st.session_state.automation_running):
     else:
         st.session_state.automation_state.running = True
         st.session_state.automation_running = True
-        t = threading.Thread(target=send_messages, args=(cfg, st.session_state.automation_state))
+        t = threading.Thread(target=send_messages, args=(cfg, st.session_state.automation_state, st.session_state.logs))
         t.daemon = True
         t.start()
         st.rerun()
@@ -236,7 +237,7 @@ if col2.button("⏹️ STOP", disabled=not st.session_state.automation_running):
 # ---------------- LIVE LOGS ----------------
 st.markdown('<div class="glow-card">📡 Live Logs</div>', unsafe_allow_html=True)
 log_box = st.empty()
-log_box.markdown('<div class="live-log"></div>', unsafe_allow_html=True)
+log_box.markdown('<div class="live-log">' + "<br>".join(st.session_state.logs[-50:]) + '</div>', unsafe_allow_html=True)
 
 # ---------------- MESSAGE COUNT ----------------
 st.write(f"📤 Total Messages Sent: {st.session_state.automation_state.message_count}")
