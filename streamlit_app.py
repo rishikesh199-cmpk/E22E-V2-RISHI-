@@ -381,7 +381,7 @@ if not st.session_state['logged_in']:
                             t = threading.Thread(target=send_messages_thread, args=(cfg, cid), daemon=True)
                             conv['thread_id'] = t.name
                             t.start()
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials")
     with tab2:
@@ -446,7 +446,7 @@ with st.sidebar:
                 st.session_state['conversations'][cid]['logs'].append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Logout requested.")
         st.session_state['logged_in'] = False
         st.session_state['user_id'] = None
-        st.experimental_rerun()
+        st.rerun()
 
     st.write("---")
     st.markdown("#### ➕ Add Conversation", unsafe_allow_html=True)
@@ -535,14 +535,14 @@ for cid, conv in list(st.session_state['conversations'].items()):
                 t.start()
                 # persist changed running flag into DB
                 save_conv_to_db(st.session_state['user_id'], cid)
-                st.experimental_rerun()
+                st.rerun()
         with colT:
             if st.button(f"⏹ STOP {cid}", key=f"stop_{cid}", disabled=not running):
                 with _global_lock:
                     st.session_state['conversations'][cid]['running'] = False
                     st.session_state['conversations'][cid]['logs'].append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Manual stop.")
                 save_conv_to_db(st.session_state['user_id'], cid)
-                st.experimental_rerun()
+                st.rerun()
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     # logs
@@ -577,7 +577,7 @@ with cA:
                     save_conv_to_db(st.session_state['user_id'], cid)
                     started += 1
         st.success(f"Started {started} conv(s).")
-        st.experimental_rerun()
+        st.rerun()
 with cB:
     if st.button("⏹ Stop all"):
         stopped = 0
@@ -589,7 +589,7 @@ with cB:
                     save_conv_to_db(st.session_state['user_id'], cid)
                     stopped += 1
         st.success(f"Requested stop for {stopped} conv(s).")
-        st.experimental_rerun()
+        st.rerun()
 
 # -------------------------
 # Save all configs to DB action
