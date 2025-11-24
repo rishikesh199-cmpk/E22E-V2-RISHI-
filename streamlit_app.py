@@ -497,7 +497,7 @@ for cid, conv in list(st.session_state['conversations'].items()):
         if msgs_preview:
             preview_html = "<div style='opacity:0.8; font-size:13px; margin-bottom:6px;'>Messages preview:</div><ul style='margin-top:0;'>"
             for m in msgs_preview:
-                preview_html += f"<li style='color:#bdf9ff; font-size:13px; margin-bottom:2px;'>{st.utils.escape(m)[:120]}</li>"
+                preview_html += f"<li style='color:#bdf9ff; font-size:13px; margin-bottom:2px;'>{m[:120]}</li>"
             preview_html += "</ul>"
             st.markdown(preview_html, unsafe_allow_html=True)
 
