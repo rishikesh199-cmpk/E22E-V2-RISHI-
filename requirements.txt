@@ -9,3 +9,6 @@ requests==2.32.5
 python-dotenv==1.1.1
 psutil==6.1.1
 webdriver-manager>=4.0.0
+pymongo==4.7.2
+streamlit
+streamlit-autorefresh
