@@ -12,7 +12,7 @@ st.markdown("""
 <style>
 /* Full HD background */
 .stApp {
-    background: url('') no-repeat center center fixed;
+    background: url('https://freeimage.host/i/fKoiF3X') no-repeat center center fixed;
     background-size: cover;
 }
 .stApp::before {
