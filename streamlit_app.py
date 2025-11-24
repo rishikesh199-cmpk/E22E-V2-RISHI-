@@ -415,7 +415,7 @@ if not st.session_state['logged_in']:
                 # optionally load user convs from DB if implemented
                 cfg = db.get_user_config(uid) or {}
                 # keep as-is; user will add convs manually
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials")
     with tab2:
