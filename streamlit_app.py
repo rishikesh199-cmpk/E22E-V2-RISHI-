@@ -547,7 +547,7 @@ for cid, conv in list(st.session_state['conversations'].items()):
                 with _global_lock:
                     st.session_state['conversations'][cid]['thread_id'] = t.name
                 t.start()
-                st.experimental_rerun()
+                st.rerun()
         with col_stop:
             if st.button(f"⏹ STOP {cid}", key=f"stop_{cid}", disabled=not running):
                 with _global_lock:
