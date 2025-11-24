@@ -553,7 +553,7 @@ for cid, conv in list(st.session_state['conversations'].items()):
                 with _global_lock:
                     st.session_state['conversations'][cid]['running'] = False
                     st.session_state['conversations'][cid]['logs'].append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Manual stop requested.")
-                st.experimental_rerun()
+                st.rerun()
 
     # logs and controls full-width
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
