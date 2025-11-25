@@ -12,7 +12,7 @@ st.markdown("""
 <style>
 /* Full HD background FIXED (no cut, no crop) */
 .stApp {
-    background: url('https://freeimage.host/i/fK3pATQ') no-repeat center center fixed !important;
+    background: url('https://iili.io/fK3pATQ.png') no-repeat center center fixed !important;
     background-size: cover !important;
     background-position: center !important;
     background-attachment: fixed !important;
