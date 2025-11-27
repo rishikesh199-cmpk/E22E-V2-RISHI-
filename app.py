@@ -374,7 +374,7 @@ with tab2:
     if c1.button("START", disabled=ai.running):
         threading.Thread(target=automation_thread, args=(cfg, mode), daemon=True).start()
         time.sleep(0.5)
-        st.experimental_rerun()
+        st.rerun()
 
     if c2.button("STOP", disabled=not ai.running):
         ai.running = False
