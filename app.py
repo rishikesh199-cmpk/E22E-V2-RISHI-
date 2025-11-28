@@ -46,7 +46,7 @@ st.markdown("""
 
 /* Card */
 .card {
-    background: rgba(230,230,230,0.5);
+    background: rgba(150,150,150,0.5);
     padding: 20px;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.6);
