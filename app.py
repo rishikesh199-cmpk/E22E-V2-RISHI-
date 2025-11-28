@@ -473,7 +473,7 @@ with c3:
         }
         start_automation_thread(cfg_payload, st.session_state.user_id)
         time.sleep(0.3)
-        st.experimental_rerun()
+        st.rerun()
 
 # ---------- Live Console UI ----------
 st.subheader("📡 Live Console Monitor")
