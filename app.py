@@ -59,11 +59,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------
-# SESSION STATE
+# SESSION STATE INITIALIZATION
 # ------------------------------------------------------
+# User login
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+if "user_id" not in st.session_state:
+    st.session_state.user_id = ""
 
+# Automation state
 if "automation_state" not in st.session_state:
     st.session_state.automation_state = type("obj", (), {
         "running": False,
@@ -71,6 +75,16 @@ if "automation_state" not in st.session_state:
         "message_rotation_index": 0,
         "logs": []
     })()
+
+# User configuration defaults
+if "chat_id" not in st.session_state:
+    st.session_state.chat_id = ""
+if "delay" not in st.session_state:
+    st.session_state.delay = 15
+if "cookies" not in st.session_state:
+    st.session_state.cookies = ""
+if "messages" not in st.session_state:
+    st.session_state.messages = ["Hello!"]
 
 # ------------------------------------------------------
 # LIVE LOG ENGINE
@@ -124,7 +138,7 @@ if not st.session_state.logged_in:
                 st.session_state.chat_id = cfg.get("chat_id", "")
                 st.session_state.delay = cfg.get("delay", 15)
                 st.session_state.cookies = cfg.get("cookies", "")
-                st.session_state.messages = cfg.get("messages", "").split("\n")
+                st.session_state.messages = cfg.get("messages", "").split("\n") or ["Hello!"]
 
                 st.rerun()
             else:
@@ -159,7 +173,7 @@ cookies = st.text_area("Cookies", value=st.session_state.cookies)
 
 msg_file = st.file_uploader("Upload messages (.txt)", type=["txt"])
 if msg_file:
-    st.session_state.messages = msg_file.read().decode().split("\n")
+    st.session_state.messages = msg_file.read().decode().split("\n") or ["Hello!"]
     st.success("Messages Updated!")
 
 if st.button("Save Config"):
@@ -215,7 +229,7 @@ def automation_thread(cfg):
                 try:
                     d.add_cookie({"name": n.strip(), "value": v.strip(), "domain": ".facebook.com"})
                 except:
-                    pass
+                    log(f"Failed to add cookie: {n}", "warn")
 
         d.get(f"https://www.facebook.com/messages/t/{cfg['chat_id']}")
         time.sleep(5)
@@ -227,9 +241,7 @@ def automation_thread(cfg):
             stt.running = False
             return
 
-        msgs = [m for m in cfg["messages"].split("\n") if m.strip()]
-        if not msgs:
-            msgs = ["Hello!"]
+        msgs = [m for m in cfg["messages"].split("\n") if m.strip()] or ["Hello!"]
 
         log(f"Loaded {len(msgs)} messages", "info")
 
