@@ -217,7 +217,7 @@ with col2:
         st.success("Saved configuration")
         # refresh local config
         user_config = db.get_user_config(st.session_state.user_id)
-        st.experimental_rerun()
+        st.rerun()
 
 # ---------- Browser setup ----------
 def setup_browser():
