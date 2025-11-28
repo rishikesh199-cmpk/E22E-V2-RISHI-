@@ -11,46 +11,87 @@ st.set_page_config(page_title="Automation Panel", page_icon="⚡", layout="wide"
 # ---------- CSS ----------
 st.markdown("""
 <style>
-.stApp { background:#f5f7fa; }
+
+.stApp { 
+    background: linear-gradient(135deg, #dbeafe, #f0f9ff, #e0f2fe);
+    background-size: 400% 400%;
+    animation: bgmove 12s ease infinite;
+}
+
+@keyframes bgmove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 
 .title { 
-    font-size:2.2rem; 
-    font-weight:700; 
+    font-size:2.5rem; 
+    font-weight:800; 
     text-align:center; 
-    margin-bottom:15px; 
-    color:#222; 
+    margin-bottom:20px; 
+    background: linear-gradient(120deg, #1e3a8a, #0ea5e9);
+    -webkit-background-clip:text;
+    color:transparent;
 }
 
+/* ===== GLASS CARD ===== */
 .card { 
-    background:#fff; 
-    padding:20px; 
-    border:1px solid #e5e7eb; 
-    border-radius:12px;
-    box-shadow:0px 6px 18px rgba(0,0,0,0.15); 
+    background: rgba(255, 255, 255, 0.18);
+    padding:25px; 
+    border-radius:18px; 
+    border:1px solid rgba(255,255,255,0.35);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
+/* ===== LOG BOX (Glass Dark) ===== */
 .logbox { 
-    background:#0d1117; 
+    background: rgba(13,17,23,0.65); 
     color:#10b981; 
-    height:320px; 
-    padding:12px; 
-    border-radius:10px; 
+    height:350px; 
+    padding:15px; 
+    border-radius:16px; 
     overflow:auto; 
     font-size:13px; 
     font-family:monospace; 
+    border:1px solid rgba(255,255,255,0.2);
+    box-shadow:0px 6px 18px rgba(0,0,0,0.25);
 }
 
+/* ===== BUTTONS ===== */
 .stButton>button { 
-    background:#2563eb !important; 
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important; 
     color:#fff !important; 
-    border-radius:6px; 
-    padding:8px 18px; 
-    font-weight:600; 
+    border-radius:10px; 
+    padding:10px 22px; 
+    font-weight:700 !important;
+    border:none !important;
+    box-shadow:0px 4px 10px rgba(37,99,235,0.45);
+    transition: 0.25s ease;
 }
 
-input, textarea { 
-    border-radius:8px !important; 
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow:0px 6px 14px rgba(37,99,235,0.65);
 }
+
+/* Inputs Glass */
+input, textarea, select { 
+    background: rgba(255,255,255,0.35) !important;
+    border-radius:12px !important; 
+    backdrop-filter: blur(10px);
+    border:1px solid rgba(255,255,255,0.5) !important;
+    color:#111 !important;
+}
+
+/* Sidebar glass */
+.css-1d391kg {
+    background: rgba(255,255,255,0.35) !important;
+    backdrop-filter: blur(10px);
+    border-right:1px solid rgba(255,255,255,0.4);
+}
+
 </style>
 """, unsafe_allow_html=True)
 # ---------- Session ----------
