@@ -454,7 +454,7 @@ with c1:
         else:
             start_automation_thread(cfg_payload, st.session_state.user_id)
             time.sleep(0.3)
-            st.experimental_rerun()
+            st.rerun()
 with c2:
     if st.button("⏹ Stop", disabled=not st.session_state.automation_state.running):
         stop_automation()
