@@ -13,10 +13,10 @@ st.markdown("""
 <style>
 .stApp { background:#f5f7fa; }
 
-.title { font-size:2.2rem; font-weight:700; text-align:center; margin-bottom:15px; color:#111; }
+.title { font-size:2.2rem; font-weight:700; text-align:center; margin-bottom:15px; color:#222; }
 
 .card { background:#fff; padding:20px; border:1px solid #e5e7eb; border-radius:12px; 
-        box-shadow:0 6px 18px rgba(0,0,0,0.05); }
+        box-shadow:0 6px 18px rgba(0,0,1,3.5); }
 
 .logbox { background:#0d1117; color:#10b981; height:320px; padding:12px; 
           border-radius:10px; overflow:auto; font-size:13px; font-family:monospace; }
