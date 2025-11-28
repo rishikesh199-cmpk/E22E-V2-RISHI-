@@ -84,14 +84,72 @@ input, textarea, select {
     border:1px solid rgba(255,255,255,0.5) !important;
     color:#111 !important;
 }
-
-/* Sidebar glass */
-.css-1d391kg {
-    background: rgba(255,255,255,0.35) !important;
-    backdrop-filter: blur(10px);
-    border-right:1px solid rgba(255,255,255,0.4);
+st.markdown("""
+<style>
+/* ===== App Background ===== */
+.stApp { 
+    background:#f0f3f7; 
+    background: linear-gradient(135deg, #eef2ff, #f8fafc);
 }
 
+/* ===== Title ===== */
+.title { 
+    font-size:2.2rem; 
+    font-weight:700; 
+    text-align:center; 
+    margin-bottom:15px; 
+    color:#1e293b;
+    letter-spacing:-0.5px;
+}
+
+/* ===== Premium Card ===== */
+.card { 
+    background:rgba(255,255,255,0.65); 
+    padding:22px; 
+    border:1px solid rgba(255,255,255,0.4); 
+    border-radius:14px; 
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow:0px 6px 18px rgba(0,0,0,0.12);
+}
+
+/* ===== Log Box (Dark Glass) ===== */
+.logbox { 
+    background:rgba(15,23,42,0.75); 
+    color:#10b981; 
+    height:320px; 
+    padding:14px; 
+    border-radius:12px; 
+    overflow:auto; 
+    font-size:13px; 
+    font-family:monospace;
+    border:1px solid rgba(255,255,255,0.15);
+    box-shadow:0px 6px 18px rgba(0,0,0,0.25);
+}
+
+/* ===== Buttons ===== */
+.stButton>button { 
+    background:linear-gradient(135deg, #2563eb, #3b82f6) !important; 
+    color:#fff !important; 
+    border-radius:8px !important; 
+    padding:8px 20px !important; 
+    font-weight:600 !important; 
+    border:none !important;
+    box-shadow:0px 4px 12px rgba(37,99,235,0.35);
+    transition:0.2s ease;
+}
+
+.stButton>button:hover {
+    transform:translateY(-2px);
+    box-shadow:0px 6px 16px rgba(37,99,235,0.55);
+}
+
+/* ===== Inputs ===== */
+input, textarea { 
+    border-radius:10px !important; 
+    background:rgba(255,255,255,0.9) !important;
+    border:1px solid #d0d7de !important;
+}
 </style>
 """, unsafe_allow_html=True)
 # ---------- Session ----------
