@@ -1,100 +1,115 @@
 import sqlite3
 import os
 
-DB_FILE = "automation.db"
+DB_PATH = "data.db"
 
-# Initialize database
+# ---------------------- INIT DB ----------------------
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+
     # Users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
-            password TEXT
-        )
-    """)
-    # Config table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS configs (
-            user_id INTEGER PRIMARY KEY,
+            password TEXT,
             chat_id TEXT,
-            chat_type TEXT,
+            delay INTEGER,
             cookies TEXT,
             messages TEXT,
-            delay INTEGER,
-            running INTEGER,
-            FOREIGN KEY(user_id) REFERENCES users(id)
+            running INTEGER DEFAULT 0
         )
     """)
+
     conn.commit()
     conn.close()
 
+
+# Auto-run init
 init_db()
 
-# ----------------- User Management -----------------
+# ---------------------- USER FUNCTIONS ----------------------
 def create_user(username, password):
     try:
-        conn = sqlite3.connect(DB_FILE)
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("INSERT INTO users (username,password) VALUES (?,?)", (username,password))
-        conn.commit()
-        user_id = c.lastrowid
-        # create default config
-        c.execute("INSERT INTO configs (user_id,chat_id,chat_type,cookies,messages,delay,running) VALUES (?,?,?,?,?,?,?)",
-                  (user_id,"E2EE","E2EE","","",15,0))
+
+        c.execute("SELECT * FROM users WHERE username=?", (username,))
+        if c.fetchone():
+            conn.close()
+            return False, "Username already exists"
+
+        c.execute("""
+            INSERT INTO users (username, password, chat_id, delay, cookies, messages, running)
+            VALUES (?, ?, '', 15, '', '', 0)
+        """, (username, password))
+
         conn.commit()
         conn.close()
-        return True,"User created"
-    except sqlite3.IntegrityError:
-        return False,"Username already exists"
+        return True, "User created"
 
-def verify_user(username,password):
-    conn = sqlite3.connect(DB_FILE)
+    except Exception as e:
+        return False, str(e)
+
+
+def verify_user(username, password):
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id FROM users WHERE username=? AND password=?", (username,password))
-    res = c.fetchone()
+    c.execute("SELECT id FROM users WHERE username=? AND password=?", (username, password))
+    row = c.fetchone()
     conn.close()
-    if res:
-        return res[0]
-    return None
 
-# ----------------- Config Management -----------------
+    if row:
+        return row[0]
+    return False
+
+
+# ---------------------- CONFIG FUNCTIONS ----------------------
 def get_user_config(user_id):
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT chat_id, chat_type, cookies, messages, delay, running FROM configs WHERE user_id=?", (user_id,))
-    res = c.fetchone()
+
+    c.execute("""
+        SELECT chat_id, delay, cookies, messages, running
+        FROM users
+        WHERE id=?
+    """, (user_id,))
+
+    row = c.fetchone()
     conn.close()
-    if res:
-        return {
-            "chat_id": res[0],
-            "chat_type": res[1],
-            "cookies": res[2],
-            "messages": res[3],
-            "delay": res[4],
-            "running": bool(res[5])
-        }
-    else:
+
+    if not row:
         return {}
 
-def update_user_config(user_id, chat_id, chat_type, delay, cookies, messages, running=False):
-    conn = sqlite3.connect(DB_FILE)
+    return {
+        "chat_id": row[0] or "",
+        "delay": row[1] or 15,
+        "cookies": row[2] or "",
+        "messages": row[3] or "",
+        "running": bool(row[4])
+    }
+
+
+def update_user_config(user_id, chat_id, delay, cookies, messages, running=False):
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+
     c.execute("""
-        UPDATE configs
-        SET chat_id=?, chat_type=?, cookies=?, messages=?, delay=?, running=?
-        WHERE user_id=?
-    """, (chat_id, chat_type, cookies, messages, delay, int(running), user_id))
+        UPDATE users
+        SET chat_id=?, delay=?, cookies=?, messages=?, running=?
+        WHERE id=?
+    """, (chat_id, delay, cookies, messages, 1 if running else 0, user_id))
+
     conn.commit()
     conn.close()
 
-# ----------------- Get All Users (Optional) -----------------
+
+# ---------------------- EXTRA (OPTIONAL) ----------------------
 def get_all_users():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT u.id, u.username, c.running FROM users u LEFT JOIN configs c ON u.id=c.user_id")
-    res = c.fetchall()
+    c.execute("SELECT id, username FROM users")
+    rows = c.fetchall()
     conn.close()
-    return res
+    return rows
