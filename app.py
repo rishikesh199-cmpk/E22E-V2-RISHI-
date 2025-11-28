@@ -93,7 +93,7 @@ st.markdown("""
 
 /* Inputs */
 input, textarea, select {
-    background: rgba(255,0,0,0.9) !important;
+    background: rgba(255,255,255,0.4) !important;
     border-radius: 10px !important;
 }
 </style>
