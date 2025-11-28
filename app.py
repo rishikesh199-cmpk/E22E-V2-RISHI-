@@ -108,7 +108,7 @@ if not st.session_state.logged_in:
                         st.session_state.automation_state.running = True
                         st.session_state.automation_running = True
                     append_log("INFO", f"User '{u}' logged in (ID: {uid})")
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("Invalid credentials")
             except Exception as e:
@@ -210,7 +210,7 @@ with col_actions:
             t.daemon = True
             t.start()
             time.sleep(0.2)
-            st.experimental_rerun()
+            st.rerun()
 
     if col_stop.button("⏹️ STOP", disabled=stop_disabled):
         st.session_state.automation_state.running = False
@@ -227,7 +227,7 @@ with col_actions:
         st.session_state.user_id = None
         st.session_state.automation_state.running = False
         st.session_state.automation_running = False
-        st.experimental_rerun()
+        st.rerun()
 
 # ---------------- STATUS BADGE ----------------
 status_col1, status_col2 = st.columns([1,3])
@@ -393,7 +393,7 @@ col_r1, col_r2, col_r3 = st.columns([1,1,6])
 with col_r1:
     if st.button("Refresh Logs"):
         append_log("INFO", "Manual refresh of logs requested.")
-        st.experimental_rerun()
+        st.rerun()
 with col_r2:
     if st.button("Clear Logs"):
         st.session_state.automation_state.logs = []
