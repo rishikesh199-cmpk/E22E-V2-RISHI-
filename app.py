@@ -93,7 +93,7 @@ st.markdown("""
 
 /* Inputs */
 input, textarea, select {
-    background: rgba(255,255,255,0.9) !important;
+    background: rgba(255,0,0,0.9) !important;
     border-radius: 10px !important;
 }
 </style>
@@ -165,7 +165,7 @@ if not st.session_state.logged_in:
                     st.session_state.user_id = uid
                     st.session_state.username = login_user
                     push_log(f"User '{login_user}' logged in", "INFO")
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("Invalid credentials")
                     push_log("Login failed for user: " + str(login_user), "WARN")
