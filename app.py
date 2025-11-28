@@ -459,7 +459,7 @@ with c2:
     if st.button("⏹ Stop", disabled=not st.session_state.automation_state.running):
         stop_automation()
         time.sleep(0.3)
-        st.experimental_rerun()
+        st.rerun()
 with c3:
     if st.button("Restart (quick)"):
         stop_automation()
@@ -500,7 +500,7 @@ with dcol2:
     if st.button("🗑 Clear Logs"):
         st.session_state.automation_state.logs = []
         push_log("User cleared logs", "INFO")
-        st.experimental_rerun()
+        st.rerun()
 
 # show metrics
 m1, m2, m3 = st.columns(3)
