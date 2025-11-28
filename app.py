@@ -13,22 +13,46 @@ st.markdown("""
 <style>
 .stApp { background:#f5f7fa; }
 
-.title { font-size:2.2rem; font-weight:700; text-align:center; margin-bottom:15px; color:#222; }
+.title { 
+    font-size:2.2rem; 
+    font-weight:700; 
+    text-align:center; 
+    margin-bottom:15px; 
+    color:#222; 
+}
 
-.card { background:#fff; padding:20px; border:1px solid #e5e7eb; border-radius:12px; 
-        box-shadow:0 6px 18px rgba(0,0,1,3.5); }
+.card { 
+    background:#fff; 
+    padding:20px; 
+    border:1px solid #e5e7eb; 
+    border-radius:12px;
+    box-shadow:0px 6px 18px rgba(0,0,0,0.15); 
+}
 
-.logbox { background:#0d1117; color:#10b981; height:320px; padding:12px; 
-          border-radius:10px; overflow:auto; font-size:13px; font-family:monospace; }
+.logbox { 
+    background:#0d1117; 
+    color:#10b981; 
+    height:320px; 
+    padding:12px; 
+    border-radius:10px; 
+    overflow:auto; 
+    font-size:13px; 
+    font-family:monospace; 
+}
 
-.stButton>button { background:#2563eb !important; color:#fff !important; border-radius:6px; padding:8px 18px; font-weight:600; }
+.stButton>button { 
+    background:#2563eb !important; 
+    color:#fff !important; 
+    border-radius:6px; 
+    padding:8px 18px; 
+    font-weight:600; 
+}
 
-input, textarea { border-radius:8px !important; }
+input, textarea { 
+    border-radius:8px !important; 
+}
 </style>
 """, unsafe_allow_html=True)
-
-st.markdown('<div class="title">FB Automation Panel</div>', unsafe_allow_html=True)
-
 # ---------- Session ----------
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
