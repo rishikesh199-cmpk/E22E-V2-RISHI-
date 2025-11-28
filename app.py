@@ -61,13 +61,10 @@ st.markdown("""
 # ------------------------------------------------------
 # SESSION STATE INITIALIZATION
 # ------------------------------------------------------
-# User login
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user_id" not in st.session_state:
     st.session_state.user_id = ""
-
-# Automation state
 if "automation_state" not in st.session_state:
     st.session_state.automation_state = type("obj", (), {
         "running": False,
@@ -75,8 +72,7 @@ if "automation_state" not in st.session_state:
         "message_rotation_index": 0,
         "logs": []
     })()
-
-# User configuration defaults
+# User config defaults
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = ""
 if "delay" not in st.session_state:
@@ -96,10 +92,8 @@ def log(msg, level="info"):
         "error": "#ef4444",
         "warn": "#eab308",
     }.get(level, "#38bdf8")
-
     ts = datetime.datetime.now().strftime("%H:%M:%S")
     formatted = f"<span style='color:{color}'>[{ts}] {msg}</span>"
-
     st.session_state.automation_state.logs.append(formatted)
     if len(st.session_state.automation_state.logs) > 300:
         st.session_state.automation_state.logs = st.session_state.automation_state.logs[-200:]
@@ -110,7 +104,7 @@ def log(msg, level="info"):
 with st.sidebar:
     st.header("⚙️ Menu")
     if st.session_state.logged_in:
-        st.write("Logged in as: **" + str(st.session_state.user_id) + "**")
+        st.write(f"Logged in as: **{st.session_state.user_id}**")
         if st.button("Logout"):
             st.session_state.logged_in = False
             st.session_state.automation_state.running = False
@@ -164,7 +158,6 @@ if not st.session_state.logged_in:
 # CONFIGURATION UI
 # ------------------------------------------------------
 st.markdown("<div class='title'>Automation Panel</div>", unsafe_allow_html=True)
-
 st.subheader("🔧 Configuration")
 
 chat_id = st.text_input("Chat ID", value=st.session_state.chat_id)
@@ -197,17 +190,15 @@ def setup_browser():
     opt.add_argument("--disable-dev-shm-usage")
     return webdriver.Chrome(options=opt)
 
-def find_input(driver):
-    candidates = [
-        "div[contenteditable='true']",
-        "textarea",
-        "[role='textbox']"
-    ]
-    for c in candidates:
-        try:
-            return driver.find_element(By.CSS_SELECTOR, c)
-        except:
-            pass
+def find_input(driver, retries=5):
+    candidates = ["div[contenteditable='true']", "textarea", "[role='textbox']"]
+    for _ in range(retries):
+        for c in candidates:
+            try:
+                return driver.find_element(By.CSS_SELECTOR, c)
+            except:
+                pass
+        time.sleep(1)
     return None
 
 # ------------------------------------------------------
@@ -215,7 +206,6 @@ def find_input(driver):
 # ------------------------------------------------------
 def automation_thread(cfg):
     stt = st.session_state.automation_state
-
     try:
         log("Starting Browser...", "info")
         d = setup_browser()
@@ -242,13 +232,11 @@ def automation_thread(cfg):
             return
 
         msgs = [m for m in cfg["messages"].split("\n") if m.strip()] or ["Hello!"]
-
         log(f"Loaded {len(msgs)} messages", "info")
 
         while stt.running:
             msg = msgs[stt.message_rotation_index % len(msgs)]
             stt.message_rotation_index += 1
-
             try:
                 box.send_keys(msg)
                 box.send_keys("\n")
@@ -264,7 +252,6 @@ def automation_thread(cfg):
 
     except Exception as e:
         log(f"Fatal Error: {e}", "error")
-
     finally:
         try:
             d.quit()
@@ -276,7 +263,6 @@ def automation_thread(cfg):
 # CONTROLS
 # ------------------------------------------------------
 st.subheader("🚀 Automation Controls")
-
 c1, c2 = st.columns(2)
 
 with c1:
@@ -288,7 +274,6 @@ with c1:
             "messages": "\n".join(st.session_state.messages)
         }
         st.session_state.automation_state.running = True
-
         t = threading.Thread(target=automation_thread, args=(cfg,), daemon=True)
         t.start()
         log("Automation Started", "success")
@@ -306,16 +291,19 @@ with c2:
 st.subheader("📡 LIVE CONSOLE LOGS")
 st.write("Messages Sent:", st.session_state.automation_state.message_count)
 
-html = "<div class='logbox'>"
-for entry in st.session_state.automation_state.logs[-150:]:
-    html += entry + "<br>"
-html += "</div>"
+log_placeholder = st.empty()
 
-st.markdown(html, unsafe_allow_html=True)
+def display_logs():
+    logs_html = "<div class='logbox'>" + "<br>".join(str(e) for e in st.session_state.automation_state.logs[-150:]) + "</div>"
+    log_placeholder.markdown(logs_html, unsafe_allow_html=True)
 
-st.markdown("""
-<script>
-var box = window.parent.document.querySelector('.logbox');
-if(box){ box.scrollTop = box.scrollHeight; }
-</script>
-""", unsafe_allow_html=True)
+# Refresh logs every second
+def log_updater():
+    while True:
+        display_logs()
+        time.sleep(1)
+        if not st.session_state.automation_state.running:
+            display_logs()
+            break
+
+threading.Thread(target=log_updater, daemon=True).start()
