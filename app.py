@@ -5,11 +5,11 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import database as db  # Your database module
 
----------------- PAGE CONFIG ----------------
+#---------------- PAGE CONFIG ----------------
 
 st.set_page_config(page_title="Automation", page_icon="🔥", layout="wide")
 
----------------- CSS & STYLING ----------------
+#---------------- CSS & STYLING ----------------
 
 st.markdown("""
 
@@ -34,7 +34,7 @@ input:focus,textarea:focus { outline:none; border:2px solid #ff00ff; box-shadow:
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)st.markdown('<div class="title"><h1>E23E FB</h1></div>', unsafe_allow_html=True)
 
----------------- SESSION STATE ----------------
+#---------------- SESSION STATE ----------------
 
 if 'logged_in' not in st.session_state: st.session_state.logged_in=False
 if 'user_id' not in st.session_state: st.session_state.user_id=None
@@ -47,7 +47,7 @@ st.session_state.automation_state=type('obj',(object,),{
 "logs":[]
 })()
 
----------------- LOGIN / CREATE ----------------
+#---------------- LOGIN / CREATE ----------------
 
 if not st.session_state.logged_in:
 tab1,tab2=st.tabs(["Login","Create Account"])
@@ -82,7 +82,7 @@ if ok: st.success("User created!")
 else: st.error(msg)
 st.stop()
 
----------------- DASHBOARD ----------------
+#---------------- DASHBOARD ----------------
 
 st.subheader(f"👤 Dashboard ({st.session_state.user_id})")
 if st.button("Logout"):
@@ -92,14 +92,14 @@ st.session_state.automation_running=False
 st.session_state.automation_state.running=False
 st.experimental_rerun()
 
----------------- MESSAGE UPLOAD ----------------
+#---------------- MESSAGE UPLOAD ----------------
 
 msg_file=st.file_uploader("Upload .txt Messages File",type=["txt"])
 if msg_file:
 st.session_state.messages=msg_file.read().decode("utf-8").split("\n")
 st.success("Messages loaded!")
 
----------------- CONFIG ----------------
+#---------------- CONFIG ----------------
 
 chat_id=st.text_input("Chat ID",value=getattr(st.session_state,'chat_id',''))
 chat_type=st.selectbox("Chat Type",["E2EE","Non-E2EE"],index=0 if getattr(st.session_state,'chat_type','E2EE')=='E2EE' else 1)
@@ -110,7 +110,7 @@ if st.button("Save Config"):
 db.update_user_config(st.session_state.user_id,chat_id,chat_type,delay,cookies,"\n".join(st.session_state.messages),running=st.session_state.automation_running)
 st.success("Saved!")
 
----------------- AUTOMATION ENGINE ----------------
+#---------------- AUTOMATION ENGINE ----------------
 
 def setup_browser():
 opt=Options()
@@ -161,7 +161,7 @@ time.sleep(int(cfg.get('delay',15)))
 d.quit()
 stt.logs.append("Automation stopped")
 
----------------- AUTOMATION CONTROLS ----------------
+#---------------- AUTOMATION CONTROLS ----------------
 
 st.subheader("Automation")
 col1,col2=st.columns(2)
@@ -177,7 +177,7 @@ if col2.button("STOP",disabled=not st.session_state.automation_running):
 st.session_state.automation_state.running=False
 st.session_state.automation_running=False
 
----------------- LIVE LOGS CONSOLE ----------------
+#---------------- LIVE LOGS CONSOLE ----------------
 
 st.subheader("Live Logs Console")
 log_placeholder = st.empty()
@@ -213,7 +213,7 @@ t_logs=threading.Thread(target=live_logs_loop)
 t_logs.daemon=True
 t_logs.start()
 
----------------- AUTO-REBOOT 10 HOURS ----------------
+#---------------- AUTO-REBOOT 10 HOURS ----------------
 
 def auto_reboot():
 time.sleep(36000)  # 10 hours
