@@ -287,7 +287,7 @@ st.subheader("ðŸ“¡ Live Logs Console")
 
 if st.session_state.automation_state.running:
     time.sleep(1)
-    st.experimental_rerun()
+    st.rerun()
 
 st.markdown("""
 <style>
