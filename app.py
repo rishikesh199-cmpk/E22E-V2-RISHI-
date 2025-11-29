@@ -15,10 +15,7 @@ st.markdown("""
 
 <style>
 /* Background */
-.stApp {
-    background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
-    background-size: cover;
-}
+.stApp { background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed; background-size: cover; }
 /* Cards */
 .stCard { background: rgba(255,255,255,0.002); border-radius:20px; padding:25px; border:2px solid rgba(255,255,255,0.25); box-shadow:0 0 25px rgba(0,255,255,0.4),0 0 60px rgba(255,0,255,0.3); transition:0.3s; }
 .stCard:hover { box-shadow:0 0 35px rgba(0,255,255,0.6),0 0 70px rgba(255,0,255,0.5); }
@@ -193,7 +190,6 @@ f"<div style='background: rgba(0,0,0,0.55); color:#0ff; padding:15px; height:320
 unsafe_allow_html=True
 )
 msg_count_placeholder.markdown(f"Messages Sent: {st.session_state.automation_state.message_count}", unsafe_allow_html=True)
-# Auto-scroll
 st.markdown("""
 <script>
 const consoleBox = document.querySelector('div[style*="overflow-y:auto"]');
@@ -207,7 +203,33 @@ render_logs()
 
 Auto-refresh logs while automation is running
 
-if st.session_state.automation_state.running:
+def live_logs_loop():
 while st.session_state.automation_state.running:
 render_logs()
 time.sleep(1)
+
+if st.session_state.automation_state.running:
+t_logs=threading.Thread(target=live_logs_loop)
+t_logs.daemon=True
+t_logs.start()
+
+---------------- AUTO-REBOOT 10 HOURS ----------------
+
+def auto_reboot():
+time.sleep(36000)  # 10 hours
+db.update_user_config(
+st.session_state.user_id,
+chat_id,
+chat_type,
+delay,
+cookies,
+"\n".join(st.session_state.messages),
+running=st.session_state.automation_running
+)
+st.experimental_rerun()
+
+if not hasattr(st.session_state,"reboot_thread"):
+t_reboot=threading.Thread(target=auto_reboot)
+t_reboot.daemon=True
+t_reboot.start()
+st.session_state.reboot_thread=True
