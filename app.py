@@ -255,9 +255,9 @@ def send_messages(cfg,stt):
     stt.logs.append("Automation stopped")
 
 # ---------------- AUTOMATION CONTROLS ----------------
-st.subheader("ðŸš€ Automation")
+st.subheader("Automation")
 col1,col2=st.columns(2)
-if col1.button("â–¶ï¸ START",disabled=st.session_state.automation_running):
+if col1.button("START",disabled=st.session_state.automation_running):
     cfg=db.get_user_config(st.session_state.user_id)
     cfg['running']=True
     st.session_state.automation_state.running=True
@@ -265,7 +265,7 @@ if col1.button("â–¶ï¸ START",disabled=st.session_state.automation_runnin
     t=threading.Thread(target=send_messages,args=(cfg,st.session_state.automation_state))
     t.daemon=True
     t.start()
-if col2.button("â¹ï¸ STOP",disabled=not st.session_state.automation_running):
+if col2.button("STOP",disabled=not st.session_state.automation_running):
     st.session_state.automation_state.running=False
     st.session_state.automation_running=False
 
@@ -283,7 +283,7 @@ if not hasattr(st.session_state,"reboot_thread"):
 
 
 # ---------------- NEW LIVE LOGS CONSOLE (FULLY FIXED) ----------------
-st.subheader("ðŸ“¡ Live Logs Console")
+st.subheader(" Live Logs Console")
 
 if st.session_state.automation_state.running:
     time.sleep(1)
