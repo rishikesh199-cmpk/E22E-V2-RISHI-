@@ -1,309 +1,481 @@
 import streamlit as st
-import threading
-import time
-import datetime
+import threading, time
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-import database as db
+from selenium.webdriver.common.by import By
+import database as db  # Your database module
+from pathlib import Path
 
-# ------------------------------------------------------
-# PAGE SETTINGS
-# ------------------------------------------------------
-st.set_page_config(page_title="Automation Panel", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Automation", page_icon="🔥", layout="wide")
 
-# ------------------------------------------------------
-# PREMIUM UI CSS
-# ------------------------------------------------------
+# ---------------- CSS & STYLING ----------------
 st.markdown("""
 <style>
+/* Full HD background */
 .stApp {
-    background: linear-gradient(135deg, #dbeafe, #e0f2fe, #f0f9ff);
+    background: url('https://i.ibb.co/9k1k2c6f/bg.png') no-repeat center center fixed;
+    background-size: cover;
 }
-.title {
-    font-size:2.4rem;
-    font-weight:800;
-    text-align:center;
-    margin-bottom:20px;
-    background: linear-gradient(120deg, #1e3a8a, #0284c7);
-    -webkit-background-clip:text;
-    color:transparent;
+.stApp::before {
+    content: "";
+    position: fixed;
+    top:0; left:0; width:0%; height:0%;
+    background: rgba(0,0,0,0.1);  /* overlay for text readability */
+    pointer-events:none;
+    z-index:0;
 }
-.card {
-    background: rgba(255,255,255,0.65);
-    padding:22px;
-    border-radius:16px;
-    border:1px solid rgba(255,255,255,0.4);
-    box-shadow:0 6px 16px rgba(0,0,0,0.12);
-    backdrop-filter: blur(14px);
+
+/* Cards */
+.stCard {
+    background: rgba(255,255,255,0.002) !important;
+    border-radius: 20px !important;
+    padding: 25px !important;
+    border: 2px solid rgba(255,255,255,0.25) !important;
+    box-shadow: 0 0 25px rgba(0,255,255,0.4), 0 0 60px rgba(255,0,255,0.3);
+    transition: all 0.3s ease-in-out;
 }
-.logbox {
-    height:330px;
-    background: rgba(15,23,42,0.75);
-    border-radius:12px;
-    padding:12px;
-    overflow:auto;
-    font-family: monospace;
-    font-size:13px;
-    border:1px solid rgba(255,255,255,0.2);
+.stCard:hover {
+    box-shadow: 0 0 35px rgba(0,255,255,0.6), 0 0 70px rgba(255,0,255,0.5);
 }
+
+/* Inputs glowing */
+input, textarea {
+    background: rgba(0,0,0,0.5) !important;
+    border: 2px solid #0ff !important;
+    border-radius: 10px !important;
+    color: #0ff !important;
+    padding: 5px 10px !important;
+}
+input:focus, textarea:focus {
+    outline: none;
+    border: 2px solid #ff00ff !important;
+    box-shadow: 0 0 15px #ff00ff;
+}
+
+/* Buttons glowing */
 .stButton>button {
-    background:linear-gradient(135deg,#2563eb,#3b82f6)!important;
-    color:#fff!important;
-    border-radius:8px!important;
-    padding:8px 20px!important;
-    font-weight:700!important;
-    border:none!important;
+    background: linear-gradient(45deg,#00eaff,#ff00d4) !important;
+    color:#fff !important;
+    border:none !important;
+    border-radius:10px !important;
+    padding:10px 25px !important;
+    font-weight:700 !important;
+}
+
+/* Logo */
+.logo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    display:block;
+    margin:auto;
+}
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 15px rgba(0,255,255,0.6); }
+    50% { transform: scale(1.12); box-shadow: 0 0 40px rgba(0,255,255,0.8); }
+    100% { transform: scale(1); box-shadow: 0 0 15px rgba(0,255,255,0.6); }
+}
+
+/* Title: watercolor text */
+.title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3.2rem;
+    font-weight: 900;
+    text-align:center;
+    background: url('https://i.ibb.co/0G6Kj8V/watercolor-texture.jpg') repeat;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: cover;
+    animation: waterFlow 6s ease-in-out infinite;
+    margin-bottom: 25px;
+}
+@keyframes waterFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Live logs */
+.logbox {
+    background: rgba(0,0,0,0.55);
+    color: #0ff;
+    padding: 15px;
+    height: 300px;
+    overflow:auto;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0,255,255,0.35);
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+/* Sparkles */
+@keyframes sparkle {
+    0% { transform: translate(0,0) rotate(0deg); opacity:1; }
+    100% { transform: translate(100px,-100px) rotate(360deg); opacity:0; }
+}
+.sparkle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(45deg, #0ff, #f0f, #ff0);
+    border-radius: 50%;
+    animation: sparkle 2s linear infinite;
 }
 </style>
+
+<img class="logo" src="https://i.ibb.co/m5G9GdXx/logo.png" alt="Logo">
+<div class="sparkle" style="top:5%; left:5%;"></div>
+<div class="sparkle" style="top:10%; right:10%;"></div>
+<div class="sparkle" style="bottom:10%; left:15%;"></div>
+<div class="sparkle" style="bottom:5%; right:5%;"></div>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# SESSION STATE INITIALIZATION
-# ------------------------------------------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "user_id" not in st.session_state:
-    st.session_state.user_id = ""
-if "automation_state" not in st.session_state:
-    st.session_state.automation_state = type("obj", (), {
-        "running": False,
-        "message_count": 0,
-        "message_rotation_index": 0,
-        "logs": []
+st.markdown('<div class="title"><h1>E23E FB<h1></div>', unsafe_allow_html=True)
+
+# ---------------- SESSION STATE ----------------
+if 'logged_in' not in st.session_state: st.session_state.logged_in=False
+if 'user_id' not in st.session_state: st.session_state.user_id=None
+if 'automation_running' not in st.session_state: st.session_state.automation_running=False
+if 'automation_state' not in st.session_state:
+    st.session_state.automation_state=type('obj',(object,),{
+        "running":False,
+        "message_count":0,
+        "message_rotation_index":0,
+        "logs":[]
     })()
-# User config defaults
-if "chat_id" not in st.session_state:
-    st.session_state.chat_id = ""
-if "delay" not in st.session_state:
-    st.session_state.delay = 15
-if "cookies" not in st.session_state:
-    st.session_state.cookies = ""
-if "messages" not in st.session_state:
-    st.session_state.messages = ["Hello!"]
 
-# ------------------------------------------------------
-# LIVE LOG ENGINE
-# ------------------------------------------------------
-def log(msg, level="info"):
-    color = {
-        "info": "#38bdf8",
-        "success": "#22c55e",
-        "error": "#ef4444",
-        "warn": "#eab308",
-    }.get(level, "#38bdf8")
-    ts = datetime.datetime.now().strftime("%H:%M:%S")
-    formatted = f"<span style='color:{color}'>[{ts}] {msg}</span>"
-    st.session_state.automation_state.logs.append(formatted)
-    if len(st.session_state.automation_state.logs) > 300:
-        st.session_state.automation_state.logs = st.session_state.automation_state.logs[-200:]
+# helper to append logs safely
+def append_log(line):
+    try:
+        st.session_state.automation_state.logs.append(f"[{time.strftime('%H:%M:%S')}] {str(line)}")
+    except Exception:
+        # fallback: ensure logs exist
+        if 'automation_state' not in st.session_state:
+            st.session_state.automation_state=type('obj',(object,),{
+                "running":False,
+                "message_count":0,
+                "message_rotation_index":0,
+                "logs":[]
+            })()
+        st.session_state.automation_state.logs.append(f"[{time.strftime('%H:%M:%S')}] {str(line)}")
 
-# ------------------------------------------------------
-# SIDEBAR
-# ------------------------------------------------------
-with st.sidebar:
-    st.header("⚙️ Menu")
-    if st.session_state.logged_in:
-        st.write(f"Logged in as: **{st.session_state.user_id}**")
-        if st.button("Logout"):
-            st.session_state.logged_in = False
-            st.session_state.automation_state.running = False
-            st.rerun()
-    else:
-        st.write("Please Login")
-
-# ------------------------------------------------------
-# LOGIN PAGE
-# ------------------------------------------------------
+# ---------------- LOGIN / CREATE ----------------
 if not st.session_state.logged_in:
-    tab1, tab2 = st.tabs(["Login", "Create Account"])
-
+    tab1,tab2=st.tabs(["Login","Create Account"])
     with tab1:
-        u = st.text_input("Username")
-        p = st.text_input("Password", type="password")
-
+        u=st.text_input("Username")
+        p=st.text_input("Password",type="password")
         if st.button("Login"):
-            uid = db.verify_user(u, p)
+            uid=db.verify_user(u,p)
             if uid:
-                st.session_state.logged_in = True
-                st.session_state.user_id = uid
-
-                cfg = db.get_user_config(uid)
-                st.session_state.chat_id = cfg.get("chat_id", "")
-                st.session_state.delay = cfg.get("delay", 15)
-                st.session_state.cookies = cfg.get("cookies", "")
-                st.session_state.messages = cfg.get("messages", "").split("\n") or ["Hello!"]
-
+                st.session_state.logged_in=True
+                st.session_state.user_id=uid
+                cfg=db.get_user_config(uid)
+                # load previous settings
+                st.session_state.chat_id=cfg.get('chat_id','')
+                st.session_state.chat_type=cfg.get('chat_type','E2EE')
+                st.session_state.delay=cfg.get('delay',15)
+                st.session_state.cookies=cfg.get('cookies','')
+                msgs = cfg.get('messages','')
+                st.session_state.messages=msgs.split("\n") if msgs else []
+                if cfg.get('running',False):
+                    st.session_state.automation_state.running=True
+                    st.session_state.automation_running=True
                 st.rerun()
             else:
-                st.error("Wrong credentials")
-
+                st.error("Invalid credentials")
     with tab2:
-        nu = st.text_input("New Username")
-        np = st.text_input("New Password", type="password")
-        npc = st.text_input("Confirm Password", type="password")
-
+        nu=st.text_input("New Username")
+        np=st.text_input("New Password",type="password")
+        npc=st.text_input("Confirm Password",type="password")
         if st.button("Create User"):
-            if np != npc:
-                st.error("Passwords do not match")
+            if np!=npc: st.error("Passwords do not match")
             else:
-                ok, msg = db.create_user(nu, np)
-                if ok:
-                    st.success("Account Created!")
-                else:
-                    st.error(msg)
+                ok,msg=db.create_user(nu,np)
+                if ok: st.success("User created!")
+                else: st.error(msg)
     st.stop()
 
-# ------------------------------------------------------
-# CONFIGURATION UI
-# ------------------------------------------------------
-st.markdown("<div class='title'>Automation Panel</div>", unsafe_allow_html=True)
-st.subheader("🔧 Configuration")
+# ---------------- DASHBOARD ----------------
+st.subheader(f"👤 Dashboard ({st.session_state.user_id})")
+if st.button("Logout"):
+    st.session_state.logged_in=False
+    st.session_state.user_id=None
+    st.session_state.automation_running=False
+    st.session_state.automation_state.running=False
+    st.rerun()
 
-chat_id = st.text_input("Chat ID", value=st.session_state.chat_id)
-delay = st.number_input("Delay (seconds)", min_value=1, max_value=999, value=st.session_state.delay)
-cookies = st.text_area("Cookies", value=st.session_state.cookies)
-
-msg_file = st.file_uploader("Upload messages (.txt)", type=["txt"])
+# ---------------- MESSAGE UPLOAD ----------------
+msg_file=st.file_uploader("Upload .txt Messages File",type=["txt"])
 if msg_file:
-    st.session_state.messages = msg_file.read().decode().split("\n") or ["Hello!"]
-    st.success("Messages Updated!")
+    st.session_state.messages=msg_file.read().decode("utf-8").split("\n")
+    st.success("Messages loaded!")
+
+# ---------------- CONFIG ----------------
+chat_id=st.text_input("Chat ID",value=getattr(st.session_state,'chat_id',''))
+chat_type=st.selectbox("Chat Type",["E2EE","Non-E2EE"],index=0 if getattr(st.session_state,'chat_type','E2EE')=='E2EE' else 1)
+delay=st.number_input("Delay (sec)",1,300,value=getattr(st.session_state,'delay',15))
+cookies=st.text_area("Cookies",value=getattr(st.session_state,'cookies',''))
 
 if st.button("Save Config"):
-    db.update_user_config(
-        st.session_state.user_id,
-        chat_id,
-        "",
-        delay,
-        cookies,
-        "\n".join(st.session_state.messages),
-    )
+    db.update_user_config(st.session_state.user_id,chat_id,chat_type,delay,cookies,"\n".join(st.session_state.messages),running=st.session_state.automation_running)
     st.success("Saved!")
 
-# ------------------------------------------------------
-# SELENIUM SETUP
-# ------------------------------------------------------
+# ---------------- AUTOMATION ENGINE ----------------
 def setup_browser():
-    opt = Options()
-    opt.add_argument("--headless=new")
-    opt.add_argument("--no-sandbox")
-    opt.add_argument("--disable-dev-shm-usage")
+    opt=Options()
+    opt.add_argument('--headless=new')
+    opt.add_argument('--no-sandbox')
+    opt.add_argument('--disable-dev-shm-usage')
+    # Try to set binary if available (improves reliability in some environments)
+    chromium_paths = [
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chrome'
+    ]
+    for p in chromium_paths:
+        if Path(p).exists():
+            opt.binary_location = p
+            break
     return webdriver.Chrome(options=opt)
 
-def find_input(driver, retries=5):
-    candidates = ["div[contenteditable='true']", "textarea", "[role='textbox']"]
-    for _ in range(retries):
-        for c in candidates:
-            try:
-                return driver.find_element(By.CSS_SELECTOR, c)
-            except:
-                pass
-        time.sleep(1)
+def find_input(driver,chat_type):
+    selectors=["div[contenteditable='true']"] if chat_type=="E2EE" else ["div[contenteditable='true']","textarea","[role='textbox']"]
+    for s in selectors:
+        try:
+            el = driver.find_element(By.CSS_SELECTOR,s)
+            return el
+        except Exception:
+            pass
     return None
 
-# ------------------------------------------------------
-# AUTOMATION THREAD
-# ------------------------------------------------------
-def automation_thread(cfg):
-    stt = st.session_state.automation_state
+def safe_add_cookies(driver, cookie_string):
+    for c in (cookie_string or "").split(";"):
+        c = c.strip()
+        if not c:
+            continue
+        if "=" in c:
+            n,v = c.split("=",1)
+            try:
+                driver.add_cookie({"name":n.strip(),"value":v.strip(),"domain":".facebook.com","path":"/"})
+            except Exception as e:
+                append_log(f"Cookie failed for {n.strip()}: {e}")
+        else:
+            append_log(f"Skipping invalid cookie part: {c}")
+
+def send_messages(cfg, stt):
+    """Runs in background thread. Writes logs into st.session_state.automation_state.logs"""
     try:
-        log("Starting Browser...", "info")
-        d = setup_browser()
-        d.get("https://www.facebook.com")
-        time.sleep(5)
-        log("Facebook Loaded", "success")
-
-        for c in cfg["cookies"].split(";"):
-            if "=" in c:
-                n, v = c.split("=", 1)
-                try:
-                    d.add_cookie({"name": n.strip(), "value": v.strip(), "domain": ".facebook.com"})
-                except:
-                    log(f"Failed to add cookie: {n}", "warn")
-
-        d.get(f"https://www.facebook.com/messages/t/{cfg['chat_id']}")
-        time.sleep(5)
-        log("Chat Opened", "success")
-
-        box = find_input(d)
-        if not box:
-            log("Input box not found", "error")
+        append_log("Starting browser...")
+        d = None
+        try:
+            d = setup_browser()
+        except Exception as e:
+            append_log(f"Browser setup failed: {e}")
             stt.running = False
+            st.session_state.automation_running = False
             return
 
-        msgs = [m for m in cfg["messages"].split("\n") if m.strip()] or ["Hello!"]
-        log(f"Loaded {len(msgs)} messages", "info")
+        try:
+            d.get("https://www.facebook.com")
+            append_log("Browser loaded Facebook")
+            time.sleep(6)
+        except Exception as e:
+            append_log(f"Error loading Facebook: {e}")
+
+        # cookies
+        try:
+            safe_add_cookies(d, cfg.get('cookies','') or "")
+        except Exception as e:
+            append_log(f"Adding cookies failed: {e}")
+
+        try:
+            chat_url = f"https://www.facebook.com/messages/t/{cfg.get('chat_id','')}"
+            d.get(chat_url)
+            append_log(f"Opened chat {cfg.get('chat_id','')}")
+            time.sleep(8)
+        except Exception as e:
+            append_log(f"Error opening chat: {e}")
+
+        box = find_input(d, cfg.get('chat_type','E2EE'))
+        if not box:
+            append_log("Input box not found!")
+            stt.running = False
+            st.session_state.automation_running = False
+            try:
+                d.quit()
+            except:
+                pass
+            return
+
+        msgs = [m for m in (cfg.get('messages') or "").split("\n") if m.strip()]
+        if not msgs:
+            msgs = ["Hello!"]
+
+        delay_local = int(cfg.get('delay',15))
 
         while stt.running:
-            msg = msgs[stt.message_rotation_index % len(msgs)]
-            stt.message_rotation_index += 1
             try:
-                box.send_keys(msg)
-                box.send_keys("\n")
+                m = msgs[stt.message_rotation_index % len(msgs)]
+                stt.message_rotation_index += 1
+
+                # try to send - prefer JavaScript injection for contenteditable divs
+                try:
+                    tag = box.tag_name.lower()
+                except:
+                    tag = ""
+                if tag == 'div':
+                    try:
+                        d.execute_script("""
+                            const el = arguments[0];
+                            const message = arguments[1];
+                            el.focus();
+                            el.innerHTML = message.replace(/\\n/g,'<br>');
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                        """, box, m)
+                        time.sleep(0.5)
+                    except Exception as e:
+                        append_log(f"JS insert failed: {e}")
+                        try:
+                            box.click()
+                            box.send_keys(m)
+                        except Exception as e2:
+                            append_log(f"Fallback typing failed: {e2}")
+                else:
+                    try:
+                        box.click()
+                        box.send_keys(m)
+                    except Exception as e:
+                        append_log(f"Typing failed: {e}")
+
+                # try to click send button
+                try:
+                    sent = d.execute_script("""
+                        const sendButtons = Array.from(document.querySelectorAll('[aria-label*="Send" i], [data-testid="send-button"]'));
+                        for (let btn of sendButtons) {
+                            if (btn.offsetParent !== null) { btn.click(); return true; }
+                        }
+                        return false;
+                    """)
+                    if sent:
+                        append_log(f"Sent: {m}")
+                    else:
+                        # try Enter key
+                        try:
+                            box.send_keys("\n")
+                            append_log(f"Sent via Enter: {m}")
+                        except Exception as e:
+                            append_log(f"Send action failed: {e}")
+                except Exception as e:
+                    append_log(f"Click send failed: {e}")
+
                 stt.message_count += 1
-                log(f"Sent: {msg}", "success")
+                st.session_state.automation_state.message_count = stt.message_count
+
             except Exception as e:
-                log(f"Send failed: {e}", "error")
+                append_log(f"Error in send loop: {e}")
+                break
 
-            for _ in range(cfg["delay"]):
-                if not stt.running:
-                    break
-                time.sleep(1)
+            # sleep with small increments to remain responsive if stopped
+            slept = 0
+            while slept < delay_local and stt.running:
+                time.sleep(0.5)
+                slept += 0.5
 
+        append_log("Automation stopped")
     except Exception as e:
-        log(f"Fatal Error: {e}", "error")
+        append_log(f"Fatal error in automation: {e}")
     finally:
         try:
-            d.quit()
+            if 'd' in locals() and d:
+                try:
+                    d.quit()
+                except:
+                    pass
         except:
             pass
-        log("Browser Closed", "info")
+        stt.running = False
+        st.session_state.automation_running = False
 
-# ------------------------------------------------------
-# CONTROLS
-# ------------------------------------------------------
-st.subheader("🚀 Automation Controls")
-c1, c2 = st.columns(2)
+# ---------------- AUTOMATION CONTROLS ----------------
+st.subheader("🚀 Automation")
+col1,col2=st.columns(2)
+if col1.button("▶️ START",disabled=st.session_state.automation_running):
+    cfg=db.get_user_config(st.session_state.user_id)
+    # ensure required keys exist
+    cfg = cfg or {}
+    cfg.setdefault('chat_id', chat_id)
+    cfg.setdefault('chat_type', chat_type)
+    cfg.setdefault('delay', delay)
+    cfg.setdefault('cookies', cookies)
+    cfg.setdefault('messages', "\n".join(getattr(st.session_state,'messages',[])))
+    cfg['running']=True
+    st.session_state.automation_state.running=True
+    st.session_state.automation_running=True
+    t=threading.Thread(target=send_messages,args=(cfg,st.session_state.automation_state))
+    t.daemon=True
+    t.start()
+if col2.button("⏹️ STOP",disabled=not st.session_state.automation_running):
+    st.session_state.automation_state.running=False
+    st.session_state.automation_running=False
 
-with c1:
-    if st.button("▶ START", disabled=st.session_state.automation_state.running):
-        cfg = {
-            "chat_id": chat_id,
-            "delay": delay,
-            "cookies": cookies,
-            "messages": "\n".join(st.session_state.messages)
-        }
-        st.session_state.automation_state.running = True
-        t = threading.Thread(target=automation_thread, args=(cfg,), daemon=True)
-        t.start()
-        log("Automation Started", "success")
-        st.success("Running...")
+# ---------------- LIVE LOGS ----------------
+st.subheader("📡 Live Logs & Messages Sent")
 
-with c2:
-    if st.button("⏹ STOP", disabled=not st.session_state.automation_state.running):
-        st.session_state.automation_state.running = False
-        log("Stopping Automation...", "warn")
-        st.success("Stopping...")
+# --- Auto-refresh mechanism ---
+# If automation is running, rerun this script every 1 second to pick up new logs appended by background thread.
+# We throttle reruns using last_refresh timestamp in session_state.
+now = time.time()
+last = st.session_state.get('last_logs_refresh', 0)
+if st.session_state.automation_state.running and (now - last) > 1.0:
+    st.session_state.last_logs_refresh = now
+    # small sleep to let background thread append some logs if just started
+    time.sleep(0.05)
+    # Trigger rerun so UI refreshes and shows latest logs
+    try:
+        st.experimental_rerun()
+    except Exception:
+        pass
 
-# ------------------------------------------------------
-# LIVE LOGS
-# ------------------------------------------------------
-st.subheader("📡 LIVE CONSOLE LOGS")
-st.write("Messages Sent:", st.session_state.automation_state.message_count)
+st.write(f"Messages Sent: {st.session_state.automation_state.message_count}")
 
-log_placeholder = st.empty()
+# Render logs in a styled box. Show last 200 entries max.
+logs_to_show = st.session_state.automation_state.logs[-200:]
+# Provide an auto-scroll by printing logs as a single string (browser will scroll within div)
+logs_joined = "\n".join(logs_to_show) if logs_to_show else "[No logs yet]"
 
-def display_logs():
-    logs_html = "<div class='logbox'>" + "<br>".join(str(e) for e in st.session_state.automation_state.logs[-150:]) + "</div>"
-    log_placeholder.markdown(logs_html, unsafe_allow_html=True)
+st.markdown('<div class="logbox">',unsafe_allow_html=True)
+st.markdown(f"```\n{logs_joined}\n```", unsafe_allow_html=True)
+st.markdown('</div>',unsafe_allow_html=True)
 
-# Refresh logs every second
-def log_updater():
-    while True:
-        display_logs()
-        time.sleep(1)
-        if not st.session_state.automation_state.running:
-            display_logs()
-            break
+# Buttons to clear logs or download logs
+colc, cold = st.columns([1,1])
+with colc:
+    if st.button("🧹 Clear Logs"):
+        st.session_state.automation_state.logs = []
+        st.session_state.automation_state.message_count = 0
+        st.session_state.automation_state.message_rotation_index = 0
+        st.session_state.last_logs_refresh = time.time()
+        st.experimental_rerun()
+with cold:
+    if st.button("📥 Download Logs"):
+        txt = "\n".join(st.session_state.automation_state.logs)
+        st.download_button("Download .txt", txt, file_name="automation_logs.txt", mime="text/plain")
 
-threading.Thread(target=log_updater, daemon=True).start()
+# ---------------- AUTO-REBOOT 10 HOURS ----------------
+def auto_reboot():
+    time.sleep(36000)
+    db.update_user_config(st.session_state.user_id,chat_id,chat_type,delay,cookies,"\n".join(st.session_state.messages),running=st.session_state.automation_running)
+    try:
+        st.experimental_rerun()
+    except Exception:
+        pass
+
+if not hasattr(st.session_state,"reboot_thread"):
+    t_reboot=threading.Thread(target=auto_reboot)
+    t_reboot.daemon=True
+    t_reboot.start()
+    st.session_state.reboot_thread=True
